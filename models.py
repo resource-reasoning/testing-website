@@ -65,3 +65,9 @@ class TestCase(Base):
 
     id = Column(String, primary_key=True)
     negative = Column(Boolean)
+
+    # Chapter metadata for test classification
+    chapter1 = Column(SmallInteger)
+    chapter2 = Column(SmallInteger)
+    chapter3 = Column(SmallInteger)
+    chapter4 = Column(SmallInteger)
