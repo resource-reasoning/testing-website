@@ -7,7 +7,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
-Base = declarative_base(metadata=MetaData(schema='jscert'))
+
+#Base = declarative_base(metadata=MetaData(schema='jscert'))
+## To be switched out once we drop from the webapps DB to the JSCert db.
+Base = declarative_base()
+##
 
 class Place(Base):
     __tablename__ = 'places'
