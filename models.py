@@ -1,12 +1,13 @@
 from sqlalchemy import (Boolean, Column, Enum, DateTime, ForeignKey, Integer,
                         Interval, SmallInteger, String, Text)
+from sqlalchemy.schema import MetaData
 from sqlalchemy.orm import backref, relationship, scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
 from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
-Base = declarative_base()
+Base = declarative_base(metadata=MetaData(schema='jscert'))
 
 
 class Job(Base):
