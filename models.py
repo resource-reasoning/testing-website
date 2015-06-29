@@ -58,5 +58,7 @@ class Run(Base):
 
 
 class TestCase(Base):
+    __tablename__ = 'test_cases'
+
     id = Column(String, primary_key=True)
     negative = Column(Boolean)
