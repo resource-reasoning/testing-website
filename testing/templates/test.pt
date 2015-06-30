@@ -25,15 +25,17 @@
         <thead>
           <tr>
             <th>Row</th>
-            <th>Name</th>
-            <th>Description</th>
+            <th>Title</th>
+            <th>Create Time</th>
+            <th>Username</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="plce place">
-            <td tal:content="plce._id">0</td>
-            <td tal:content="plce.name">Hi</td>
-            <td tal:content="plce.short_description">No</td>
+          <tr tal:repeat="jb jobs">
+            <td tal:content="jb.id">0</td>
+            <td tal:content="jb.title">No Title</td>
+            <td tal:content="jb.create_time">No Time</td>
+            <td tal:content="jb.username">No Username</td>
           </tr>
         </tbody>
       </table>

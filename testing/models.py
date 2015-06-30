@@ -8,20 +8,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
-#Base = declarative_base(metadata=MetaData(schema='jscert'))
-## To be switched out once we drop from the webapps DB to the JSCert db.
-Base = declarative_base()
-##
-
-class Place(Base):
-    __tablename__ = 'places'
-
-    _id = Column(Integer, primary_key=True)
-    name = Column(Text, unique=True)
-    short_description = Column(Text)
-    long_description = Column(Text)
-    picture = Column(Text)
-    map_data = Column(Text)
+Base = declarative_base(metadata=MetaData(schema='jscert'))
 
 class Job(Base):
     __tablename__ = 'test_jobs'

@@ -10,15 +10,18 @@ from sqlalchemy.exc import DBAPIError
 
 from .models import (
     DBSession,
-    Place,
+    Job,
+    Batch,
+    Run,
+    TestCase,
     )
 
 
-@view_config(route_name='view_wiki')
-def view_wiki(request):
-    return HTTPFound(location = request.route_url('view_places'))
+@view_config(route_name='view_home')
+def view_home(request):
+    return HTTPFound(location = request.route_url('view_jobs'))
 
-@view_config(route_name='view_places', renderer='templates/test.pt')
+@view_config(route_name='view_jobs', renderer='templates/test.pt')
 def view_jobs(request):
-    place = DBSession.query(Place).all()
-    return dict(place=place)
+    jobs = DBSession.query(Job).order_by(Job.create_time.desc()).all()
+    return dict(jobs=jobs)

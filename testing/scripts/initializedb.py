@@ -14,7 +14,10 @@ from pyramid.scripts.common import parse_vars
 
 from ..models import (
     DBSession,
-    Place,
+    Job,
+    Batch,
+    Run,
+    TestCase,
     )
 
 
