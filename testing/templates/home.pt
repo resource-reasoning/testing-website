@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Test262 test run viewer.">
 
-    <title>Have some places yo</title>
+    <title>Test262 Job Viewer</title>
 
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
@@ -20,22 +20,31 @@
   </head>
   
   <body>
-    <div>
-      <table class="table table-hover">
+    <div class="jumbotron">
+      <div class="container">
+        <h1>test262 results viewer</h1>
+        <p>click on a job to view run info</p>
+      </div>
+    </div>
+    <div class="container">
+      <table class="table table-hover table-responsive">
         <thead>
           <tr>
             <th>Row</th>
             <th>Title</th>
             <th>Create Time</th>
             <th>Username</th>
+            <th>Commit</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="jb jobs">
-            <td tal:content="jb.id">0</td>
+          <tr tal:repeat="jb jobs" class="table-row" data-url="job/${jb.id}">
+            <td >${jb.id}</td>
             <td tal:content="jb.title">No Title</td>
             <td tal:content="jb.create_time">No Time</td>
             <td tal:content="jb.username">No Username</td>
+            <td><a tal:content="jb.repo_version[:5]" 
+              href="http://github.com/resource-reasoning/jscert_dev/commit/${jb.repo_version}"/></td>
           </tr>
         </tbody>
       </table>
@@ -46,6 +55,15 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <script>
+    $(document).ready(function($) {
+    $(".table-row").click(function() {
+        window.document.location = $(this).data("url");
+    });
+    });
+    </script>
+
   </body>
 
 </html>
