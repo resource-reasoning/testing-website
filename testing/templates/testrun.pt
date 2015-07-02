@@ -16,21 +16,34 @@
       <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
       <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
     <![endif]-->
-
   </head>
   
   <body>
 
     <div class="jumbotron">
       <div class="container">
-        <h1>/${request.matchdict['test_id']}</h1>
-        <p>see the test history</p>
+        <h1>/test/${run.id}</h1>
+        <p>recap of run of <i>${run.test_id}</i> in job ${run.batch.job_id}</p>
       </div>
     </div>
-    
     <div class="container">
-      <p tal:repeat='run runs'> ${run[0]}: ${run[1]} </p>
+    <div class="row">
+        <div class="col-sm-3">
+          <a role="button" class="btn btn-primary" href="${redirect}">View Test History</a>
+        </div>
+        <div class="col-sm-9">
+          
+        </div>
+        <div class="col-sm-6">
+          <p>Stdout dump:</p>
+          <pre>${run.stdout}</pre>
+        </div>
+        <div class="col-sm-6">
+          <p>Stderr dump:</p>
+          <pre>${run.stderr}</pre>
+        </div>
     </div>
+</div>
 
     <!-- Bootstrap core JavaScript
     ================================================== -->

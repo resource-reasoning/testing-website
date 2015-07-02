@@ -29,9 +29,15 @@ def view_jobs(request):
 
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
-	batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
-	runs = DBSession.query(Run).filter(Run.batch_id.in_(batches)).all()
-	return dict(runs=runs)
+    batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
+    runs = DBSession.query(Run).filter(Run.batch_id.in_(batches)).all()
+    runs_result = DBSession.query(Run.result, func.count(Run.result)).filter(Run.batch_id.in_(batches)).group_by(Run.result).all()
+    return dict(runs=runs, runs_result=runs_result)
+
+@view_config(route_name='view_test_run', renderer='templates/testrun.pt')
+def view_test_run(request):
+    run = DBSession.query(Run).filter(Run.id == request.matchdict['test_id']).first()
+    return dict(run=run, redirect=request.route_url('view_test', test_id=run.test_id))
 
 @view_config(route_name='view_test', renderer='templates/testcase.pt')
 def view_test(request):

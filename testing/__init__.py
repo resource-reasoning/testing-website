@@ -19,6 +19,7 @@ def main(global_config, **settings):
     config.add_route('view_home', '/')
     config.add_route('view_jobs', '/jobs')
     config.add_route('view_job' , '/job/{job_id}')
+    config.add_route('view_test_run', '/test/{test_id}')
     config.add_route('view_test', '/tests/{test_id:.*}')
     config.scan()
     return config.make_wsgi_app()

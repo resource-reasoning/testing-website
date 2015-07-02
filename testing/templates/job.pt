@@ -11,6 +11,10 @@
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css">
+
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
@@ -27,7 +31,10 @@
       </div>
     </div>
     <div class="container">
-      <table class="table table-hover">
+      <p tal:repeat='runres runs_result'> ${runres[0]}: ${runres[1]} </p>
+    </div>
+    <div class="container">
+      <table id="job-table" class="table table-hover table-bordered">
         <thead>
           <tr>
             <th>Test Id</th>
@@ -35,7 +42,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="run runs" class="table-row" data-url="${run.test_id}">
+          <tr tal:repeat="run runs" class="table-row" data-url="test/${run.id}">
             <td tal:content="run.test_id">No Test Id</td>
             <td tal:content="run.result">No Result</td>
           </tr>
@@ -48,12 +55,18 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+    <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
 
     <script>
     jQuery(document).ready(function($) {
-    $(".table-row").click(function() {
+
+      
+      $("#job-table").dataTable();
+      $(".table-row").click(function() {
         window.document.location = "http://" + window.document.location.host + "/" + $(this).data("url");
-    });
+      });
+
     });
     </script>
 

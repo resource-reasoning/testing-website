@@ -52,7 +52,7 @@ class Run(Base):
     testcase = relationship('TestCase')
 
     batch_id = Column(Integer, ForeignKey('test_batches.id'))
-    job = relationship('Batch', backref=backref('runs'))
+    batch = relationship('Batch', backref=backref('runs'))
 
     result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT'))
     exit_code = Column(SmallInteger)
