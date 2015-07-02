@@ -29,7 +29,26 @@
     </div>
     
     <div class="container">
-      <p tal:repeat='run runs'> ${run[0]}: ${run[1]} </p>
+      <p tal:repeat='stat runs_stats'> ${stat[0]}: ${stat[1]} </p>
+    </div>
+
+    <div class="container">
+      <table id="test-table" class="table table-hover table-bordered">
+        <thead>
+          <tr>
+            <th>Test Name</th>
+            <th>Result</th>
+            <th>Run</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="run runs">
+            <td tal:content="run.id">No Test Id</td>
+            <td tal:content="run.result">No Result</td>
+            <td><a href="${root_url}test/${run.id}">View Run</a></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Bootstrap core JavaScript

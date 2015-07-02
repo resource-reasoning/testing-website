@@ -32,7 +32,7 @@ def view_batch(request):
     batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
     runs = DBSession.query(Run).filter(Run.batch_id.in_(batches)).all()
     runs_result = DBSession.query(Run.result, func.count(Run.result)).filter(Run.batch_id.in_(batches)).group_by(Run.result).all()
-    return dict(runs=runs, runs_result=runs_result)
+    return dict(runs=runs, runs_result=runs_result, root_url=request.route_url('view_home'))
 
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):
@@ -41,6 +41,8 @@ def view_test_run(request):
 
 @view_config(route_name='view_test', renderer='templates/testcase.pt')
 def view_test(request):
-	runs = DBSession.query(Run.result, func.count(Run.result)).filter(
-		Run.test_id == 'tests/' + request.matchdict['test_id']).group_by(Run.result).all()
-	return dict(runs=runs)
+    runs = DBSession.query(Run).filter(
+        Run.test_id == request.matchdict['test_id']).order_by(Run.id.desc()).all()
+    runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
+        Run.test_id == 'tests/' + request.matchdict['test_id']).group_by(Run.result).all()
+    return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))

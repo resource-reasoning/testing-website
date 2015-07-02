@@ -37,14 +37,16 @@
       <table id="job-table" class="table table-hover table-bordered">
         <thead>
           <tr>
-            <th>Test Id</th>
+            <th>Test Name</th>
             <th>Result</th>
+            <th>Run</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="run runs" class="table-row" data-url="test/${run.id}">
+          <tr tal:repeat="run runs">
             <td tal:content="run.test_id">No Test Id</td>
             <td tal:content="run.result">No Result</td>
+            <td><a href="${root_url}test/${run.id}">View Run</a></td>
           </tr>
         </tbody>
       </table>
@@ -63,9 +65,6 @@
 
       
       $("#job-table").dataTable();
-      $(".table-row").click(function() {
-        window.document.location = "http://" + window.document.location.host + "/" + $(this).data("url");
-      });
 
     });
     </script>

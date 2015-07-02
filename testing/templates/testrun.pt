@@ -27,13 +27,34 @@
       </div>
     </div>
     <div class="container">
-    <div class="row">
+      <div class="row">
         <div class="col-sm-3">
-          <a role="button" class="btn btn-primary" href="${redirect}">View Test History</a>
+          <table class="table table-bordered">
+            <tbody>
+              <tr>
+                <td>Job</td>
+                <td>${run.batch.job_id}</td>
+              </tr>
+              <tr>
+                <td>Result</td>
+                <td>${run.result}</td>
+              </tr>
+              <tr>
+                <td>Exit Code</td>
+                <td>${run.exit_code}</td>
+              </tr>
+              <tr>
+                <td>Duration</td>
+                <td>${run.duration}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="col-sm-9">
-          
+        <div class="col-sm-9 col-centered">
+            <a role="button" class="btn btn-primary" href="${redirect}">View Test History</a>
         </div>
+      </div>
+      <div class="row"> 
         <div class="col-sm-6">
           <p>Stdout dump:</p>
           <pre>${run.stdout}</pre>
