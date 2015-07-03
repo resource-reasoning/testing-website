@@ -23,8 +23,8 @@
 
     <div class="jumbotron">
       <div class="container">
-        <h1>/${request.matchdict['test_id']}</h1>
-        <p>see the test history</p>
+        <h1>/tests/history</h1>
+        <p>history for /${request.matchdict['test_id']}</p>
       </div>
     </div>
     

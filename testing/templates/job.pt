@@ -31,24 +31,15 @@
       </div>
     </div>
     <div class="container">
-      <p tal:repeat='runres runs_result'> ${runres[0]}: ${runres[1]} </p>
-    </div>
-    <div class="container">
       <table id="job-table" class="table table-hover table-bordered">
         <thead>
           <tr>
-            <th>Test Name</th>
+            <th>Test Case</th>
             <th>Result</th>
-            <th>Run</th>
+            <th>See Run</th>
           </tr>
         </thead>
-        <tbody>
-          <tr tal:repeat="run runs">
-            <td tal:content="run.test_id">No Test Id</td>
-            <td tal:content="run.result">No Result</td>
-            <td><a href="${root_url}test/${run.id}">View Run</a></td>
-          </tr>
-        </tbody>
+        
       </table>
     </div>
 
@@ -64,7 +55,20 @@
     jQuery(document).ready(function($) {
 
       
-      $("#job-table").dataTable();
+      $("#job-table").dataTable( {
+        "bSort": false,
+        "bProcessing": true,
+        "bServerSide": true,
+        "sAjaxSource": "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}",
+        "sServerMethod": "GET",
+        // Rendering for link to test run.
+        //"columnDefs" : {
+        //    "render": function (data, type, row) {
+        //      return '<a href="${root_url}test/' + data + '">Run Info</a>'; 
+        //    },
+        //    "targets": 2
+        //}
+      });
 
     });
     </script>
