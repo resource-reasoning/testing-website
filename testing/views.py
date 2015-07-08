@@ -1,7 +1,7 @@
 from pyramid.response import Response
 from pyramid.view import view_config
 
-from datatables import ColumnDT,DataTables
+from datatables import DataTable
 
 from pyramid.httpexceptions import (
         HTTPNotFound,
@@ -17,10 +17,6 @@ from .models import (
     Run,
     TestCase,
     )
-
-import logging
-log = logging.getLogger(__name__)
-
 
 @view_config(route_name='view_home')
 def view_home(request):
@@ -42,27 +38,14 @@ def view_batch(request):
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
     # Server side processing for DataTables plugin
-    columns=[]
-    #columns.append(ColumnDT('id'))
-    columns.append(ColumnDT('test_id'))
-    #columns.append(ColumnDT('testcase'))
-    #columns.append(ColumnDT('batch_id'))
-    #columns.append(ColumnDT('batch'))
-    columns.append(ColumnDT('result'))
-    columns.append(ColumnDT('test_id'))
-    #columns.append(ColumnDT('exit_code'))
-    #columns.append(ColumnDT('stdout'))
-    #columns.append(ColumnDT('stderr'))
-    #columns.append(ColumnDT('duration'))
 
     batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
     query = DBSession.query(Run).filter(Run.batch_id.in_(batches))
 
-    log.info('Completed query')
+    table = DataTable(request.GET, Run, query, ["test_id", "result"])
+    table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
 
-    runs = DataTables(request, Run, query, columns)
-
-    return runs.output_result()
+    return table.json()
 
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):

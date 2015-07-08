@@ -36,7 +36,6 @@
           <tr>
             <th>Test Case</th>
             <th>Result</th>
-            <th>See Run</th>
           </tr>
         </thead>
         
@@ -56,18 +55,22 @@
 
       
       $("#job-table").dataTable( {
-        "bSort": false,
-        "bProcessing": true,
-        "bServerSide": true,
-        "sAjaxSource": "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}",
-        "sServerMethod": "GET",
-        // Rendering for link to test run.
-        //"columnDefs" : {
-        //    "render": function (data, type, row) {
-        //      return '<a href="${root_url}test/' + data + '">Run Info</a>'; 
-        //    },
-        //    "targets": 2
-        //}
+        "ordering": false,
+        "processing": true,
+        "serverSide": true,
+        "ajax" : {
+          "url" : "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}",
+          "type" : "GET"
+        },
+        "columns" : [
+          { 
+            "data" : "test_id",
+            "render" : function (data, type, row) {
+              return "<a href='" + row.DT_RowData.link + "'>" + data + "</a>";
+            }
+          },
+          { "data" : "result" }
+        ]
       });
 
     });
