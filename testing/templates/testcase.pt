@@ -36,14 +36,14 @@
       <table id="test-table" class="table table-hover table-bordered">
         <thead>
           <tr>
-            <th>Test Name</th>
+            <th>Job Number</th>
             <th>Result</th>
             <th>Run</th>
           </tr>
         </thead>
         <tbody>
           <tr tal:repeat="run runs">
-            <td tal:content="run.id">No Test Id</td>
+            <td tal:content="run.batch.job_id">No Test Id</td>
             <td tal:content="run.result">No Result</td>
             <td><a href="${root_url}test/${run.id}">View Run</a></td>
           </tr>
