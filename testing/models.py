@@ -30,7 +30,7 @@ class Batch(Base):
 
     id = Column(Integer, primary_key=True)
 
-    job_id = Column(Integer, ForeignKey('test_jobs.id'))
+    job_id = Column(Integer, ForeignKey('test_jobs.id', name='test_batches_job_id_fkey'))
     job = relationship("Job", backref=backref('batches'))
 
     system = Column(String)
@@ -48,18 +48,17 @@ class Run(Base):
 
     id = Column(Integer, primary_key=True)
 
-    test_id = Column(String, ForeignKey('test_cases.id'))
+    test_id = Column(String, ForeignKey('test_cases.id', name='test_runs_test_id_fkey'))
     testcase = relationship('TestCase')
 
-    batch_id = Column(Integer, ForeignKey('test_batches.id'))
+    batch_id = Column(Integer, ForeignKey('test_batches.id', name='test_runs_batch_id_fkey'))
     batch = relationship('Batch', backref=backref('runs'))
 
-    result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT'))
+    result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='jscert.result_text'))
     exit_code = Column(SmallInteger)
     stdout = Column(Text)
     stderr = Column(Text)
     duration = Column(Interval)
-
 
 class TestCase(Base):
     __tablename__ = 'test_cases'
@@ -67,8 +66,27 @@ class TestCase(Base):
     id = Column(String, primary_key=True)
     negative = Column(Boolean)
 
-    # Chapter metadata for test classification
-    chapter1 = Column(SmallInteger)
-    chapter2 = Column(SmallInteger)
-    chapter3 = Column(SmallInteger)
-    chapter4 = Column(SmallInteger)
+class FailGroup(Base):
+    __tablename__ = 'fail_groups'
+
+    id = Column(Integer, primary_key=True)
+    description = Column(Text)
+    reason = Column(Text)
+
+class TestGroup(Base):
+    __tablename__ = 'test_groups'
+
+    id = Column(Integer, primary_key=True)
+    description = Column(Text)
+
+class FailGroupMembership(Base):
+    __tablename__ = 'fail_group_memberships'
+
+    group_id = Column(Integer, ForeignKey('fail_groups.id', name='fail_group_memberships_group_id_fkey'), primary_key=True)
+    test_id = Column(String, ForeignKey('test_cases.id', name='fail_group_memberships_test_id_fkey'), primary_key=True)
+
+class TestGroupMembership(Base):
+    __tablename__ = 'test_group_memberships'
+
+    group_id = Column(Integer, ForeignKey('test_groups.id', name='test_group_memberships_group_id_fkey'), primary_key=True)
+    test_id = Column(String, ForeignKey('test_cases.id', name='test_group_memberships_test_id_fkey'), primary_key=True)
