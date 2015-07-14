@@ -8,7 +8,7 @@ from zope.sqlalchemy import ZopeTransactionExtension
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
-Base = declarative_base(metadata=MetaData(schema='jscert'))
+Base = declarative_base(metadata=MetaData(schema='cr1013'))
 
 class Job(Base):
     __tablename__ = 'test_jobs'
