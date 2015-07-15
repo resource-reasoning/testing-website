@@ -54,6 +54,8 @@ class Run(Base):
     batch_id = Column(Integer, ForeignKey('test_batches.id', name='test_runs_batch_id_new_fkey'))
     batch = relationship('Batch', backref=backref('runs'))
 
+    job_id = Column(Integer, ForeignKey('test_jobs.id', name='test_runs_job_id_fkey'))
+
     result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='jscert.result_text'))
     exit_code = Column(SmallInteger)
     stdout = Column(Text)

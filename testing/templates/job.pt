@@ -65,7 +65,6 @@
 
       
       $("#job-table").dataTable( {
-        "ordering": false,
         "processing": true,
         "serverSide": true,
         "ajax" : {

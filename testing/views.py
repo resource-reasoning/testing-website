@@ -31,18 +31,18 @@ def view_jobs(request):
 
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
-    batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
-    runs = DBSession.query(Run).filter(Run.batch_id.in_(batches)).all()
+    #batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
+    runs = DBSession.query(Run).filter(Run.job_id == request.matchdict['job_id']).all()
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
-        Run.batch_id.in_(batches)).group_by(Run.result).all()
+        Run.job_id == request.matchdict['job_id']).group_by(Run.result).all()
     return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
     # Server side processing for DataTables plugin
 
-    batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
-    query = DBSession.query(Run).filter(Run.batch_id.in_(batches))
+    #batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
+    query = DBSession.query(Run).filter(Run.job_id == request.matchdict['job_id'])
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
