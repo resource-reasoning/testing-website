@@ -1,19 +1,22 @@
-"""Initial DB create
+"""initial db create
 
-Revision ID: 96a91625130
+Revision ID: 5a583b3c6089
 Revises: 
-Create Date: 2015-07-14 17:43:17.325870
+Create Date: 2015-07-15 11:43:08.154685
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '96a91625130'
+revision = '5a583b3c6089'
 down_revision = None
 branch_labels = None
 depends_on = None
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import ENUM
+
+result_enum = ENUM('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='jscert.result_text', create_type=False)
 
 
 def upgrade():
@@ -86,12 +89,12 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('test_id', sa.String(), nullable=True),
     sa.Column('batch_id', sa.Integer(), nullable=True),
-    sa.Column('result', sa.Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='jscert.result_text'), nullable=True),
+    sa.Column('result', result_enum, nullable=True),
     sa.Column('exit_code', sa.SmallInteger(), nullable=True),
     sa.Column('stdout', sa.Text(), nullable=True),
     sa.Column('stderr', sa.Text(), nullable=True),
     sa.Column('duration', sa.Interval(), nullable=True),
-    sa.ForeignKeyConstraint(['batch_id'], [u'cr1013.test_batches.id'], name='test_runs_batch_id_fkey'),
+    sa.ForeignKeyConstraint(['batch_id'], [u'cr1013.test_batches.id'], name='test_runs_batch_id_new_fkey'),
     sa.ForeignKeyConstraint(['test_id'], [u'cr1013.test_cases.id'], name='test_runs_test_id_fkey'),
     sa.PrimaryKeyConstraint('id'),
     schema='cr1013'

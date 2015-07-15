@@ -51,7 +51,7 @@ class Run(Base):
     test_id = Column(String, ForeignKey('test_cases.id', name='test_runs_test_id_fkey'))
     testcase = relationship('TestCase')
 
-    batch_id = Column(Integer, ForeignKey('test_batches.id', name='test_runs_batch_id_fkey'))
+    batch_id = Column(Integer, ForeignKey('test_batches.id', name='test_runs_batch_id_new_fkey'))
     batch = relationship('Batch', backref=backref('runs'))
 
     result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='jscert.result_text'))
