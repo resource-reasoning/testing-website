@@ -46,6 +46,7 @@ def request_job_table(request):
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
+    table.searchable(lambda queryset, userinput: queryset)
 
     return table.json()
 
@@ -62,3 +63,19 @@ def view_test(request):
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
         Run.test_id == 'tests/' + request.matchdict['test_id']).group_by(Run.result).all()
     return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))
+
+@view_config(route_name='view_compare', renderer='templates/compare.pt')
+def view_compare(request):
+
+    res = DBSession.execute('''select test1.test_id, test1.id, test2.id, test1.result, test2.result 
+    from 
+      cr1013.test_runs test1 inner join cr1013.test_runs test2
+    on 
+      test1.job_id = 199 
+    and 
+      test2.job_id = 201 
+    and 
+      test1.test_id = test2.test_id
+    and
+      test1.result <> test2.result;''');
+    return dict(res=res)

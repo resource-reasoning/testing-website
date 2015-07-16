@@ -41,16 +41,16 @@
       <div class="row">
         <div class="col-sm-3">
           <div class="form-group">
-            <input type="text" class="form-control" placeholder="Enter job number to compare against">
+            <input id="job-no" type="text" class="form-control" placeholder="Enter job number to compare against">
           </div>
         </div>
         <div class="col-sm-9">
           <!-- The buttons are here as a proof of concept atm -->
-          <button type="submit" class="btn btn-default">Submit</button>
-          <button type="passbtn" class="btn btn-success">Filter Pass</button>
-          <button type="failbtn" class="btn btn-danger">Filter Fail</button>
-          <button type="abortbtn" class="btn btn-info">Filter Abort</button>
-          <button type="timeoutbtn" class="btn btn-warning">Filter Timeout</button>
+          <button id="submit" class="btn btn-default">Submit</button>
+          <button id="passbtn" class="btn btn-success">Filter Pass</button>
+          <button id="failbtn" class="btn btn-danger">Filter Fail</button>
+          <button id="abortbtn" class="btn btn-info">Filter Abort</button>
+          <button id="timeoutbtn" class="btn btn-warning">Filter Timeout</button>
         </div>
       </div>
     </div>
@@ -95,6 +95,9 @@
           },
           { "data" : "result" }
         ]
+      });
+      $("#submit").click(function () {
+        window.document.location =  '/compare/' + "${request.matchdict['job_id']}/" + $("#job-no").val();
       });
 
     });
