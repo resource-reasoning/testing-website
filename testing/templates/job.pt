@@ -44,28 +44,35 @@
             <ul class="nav navbar-nav">
               <a class="navbar-brand" href="${request.route_url('view_groups')}">Groups</a>
             </ul>
-            <form class="navbar-form navbar-right" role="search">
-              <div class="form-group">
-
-                <input id="job-no" type="text" class="form-control" placeholder="Job to compare against">
-              </div>
-              <button id="submit" class="btn btn-default">Submit</button>
-            </form>
           </div><!-- /.navbar-collapse -->
         </div><!-- /.container-fluid -->
       </nav>
     </div>
 
     <div class="container">
-      <table class="table table-bordered">
-        <tbody>
-          <tr tal:repeat="stat runs_stats">
-            <td>${stat[0]}</td>
-            <td>${stat[1]}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="row">
+        <table class="table table-bordered">
+          <tbody>
+            <tr tal:repeat="stat runs_stats">
+              <td>${stat[0]}</td>
+              <td>${stat[1]}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="row">
+        <div class="col-sm-3">
+          <div class="form-group">
+            <input id="job-no" type="text" class="form-control" placeholder="Compare against another job">
+          </div>
+        </div>
+        <div class="col-sm-9">
+          <button id="submit-no" class="btn btn-default">Submit</button>
+          <button id="death-switch" class="btn btn-default">Filter Tests with NO Group</button>
+        </div>
+      </div>
     </div>
+
     <div class="container">
       <table id="job-table" class="table table-hover table-bordered">
         <thead>
@@ -89,13 +96,15 @@
     <script>
     jQuery(document).ready(function($) {
 
-      
-      $("#job-table").dataTable( {
+      var geturl = "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}";
+      var alturl = "${request.route_path('request_job_table_nogroup', job_id=request.matchdict['job_id'])}";
+
+      var table = $("#job-table").DataTable( {
         "ordering": false,
         "processing": true,
         "serverSide": true,
         "ajax" : {
-          "url" : "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}",
+          "url" : geturl,
           "type" : "GET"
         },
         "columns" : [
@@ -108,7 +117,24 @@
           { "data" : "result" }
         ]
       });
-      $("#submit").click(function () {
+
+      var alt = false;
+      
+      $("#death-switch").click(function () {
+        if (!alt) {
+          alt = true;
+          table.ajax.
+            url(alturl).draw();
+          $(this).addClass("btn-warning");
+        } else {
+          alt = false;
+          table.ajax.
+            url(geturl).draw();
+          $(this).removeClass("btn-warning");
+        }
+      });
+
+      $("#submit-no").click(function () {
         window.document.location =  '/compare/' + "${request.matchdict['job_id']}/" + $("#job-no").val();
       });
 

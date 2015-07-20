@@ -8,7 +8,7 @@ from pyramid.httpexceptions import (
         HTTPFound,
     )
 
-from sqlalchemy import func, text, cast, Text, or_
+from sqlalchemy import func, text, cast, Text, column
 from sqlalchemy.orm import aliased
 
 from .models import (
@@ -49,11 +49,27 @@ def request_job_table(request):
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
-    # Search unimplemented as of yet.
+    # Search for similarity in Results or Regex in test_id
     table.searchable(lambda queryset, userinput: queryset.filter(or_(cast(Run.result, Text).\
                 like('%' + userinput.upper() + '%'), Run.test_id.op('~')(userinput))))
 
     return table.json()
+
+@view_config(route_name='request_job_table_nogroup', request_method='GET', renderer='json')
+def request_job_table_nogroup(request):
+    # Server side processing for DataTables plugin
+
+    # Double query required to figure out which tests do NOT have a group yet.
+    query = DBSession.query(Run.test_id).join(TestGroupMembership, TestGroupMembership.test_id == Run.test_id).\
+                filter(Run.job_id == request.matchdict['job_id'])
+    actual = DBSession.query(Run).filter(~Run.test_id.in_(query)).filter(Run.job_id == request.matchdict['job_id'])
+
+    table = DataTable(request.GET, Run, actual, ["test_id", "result"])
+    table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
+    table.searchable(lambda queryset, userinput: queryset.filter(or_(cast(Run.result, Text).\
+                like('%' + userinput.upper() + '%'), Run.test_id.op('~')(userinput))))
+    return table.json()
+
 
 
 
