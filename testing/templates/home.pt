@@ -67,7 +67,6 @@
     <script>
     jQuery(document).ready(function($) {
       
-      $("#job-table").dataTable();
       $(".table-row").click(function() {
           window.document.location = $(this).data("url");
       });

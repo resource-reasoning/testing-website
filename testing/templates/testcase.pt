@@ -42,15 +42,15 @@
         </div>
         <div class="col-sm-9">
           <label for="group-info">Groups: (appears empty if testcase has no group information)</label>
-          <table id="group-info" class="table table-bordered">
+          <table id="group-info" class="table table-bordered table-hover">
             <thead>
               <tr>
-                <td>Group Id</td>
-                <td>Group Description</td>
+                <th>Group Id</th>
+                <th>Group Description</th>
               </tr>
             </thead>
             <tbody>
-              <tr tal:repeat="group groups">
+              <tr tal:repeat="group groups" onclick="document.location = '${request.route_url('view_group', group_id=group.id)}'">
                 <td>${group.id}</td>
                 <td>${group.description}</td>
               </tr>

@@ -94,3 +94,10 @@ def view_compare(request):
       test1.result <> test2.result;'''), {'source':request.matchdict['job_id_source'], 
                                           'dest':  request.matchdict['job_id_dest']}  );
     return dict(res=res)
+
+@view_config(route_name='view_group', renderer='templates/group.pt')
+def view_group(request):
+    group = DBSession.query(TestGroup).filter(TestGroup.id == request.matchdict['group_id']).first()
+    cases = DBSession.query(TestGroupMembership).\
+                filter(TestGroupMembership.group_id == request.matchdict['group_id']).all()
+    return dict(group=group, cases=cases)
