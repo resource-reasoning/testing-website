@@ -28,10 +28,11 @@
       <div class="container">
         <h1>compare jobs</h1>
         <p>${request.matchdict['job_id_source']} (source) against ${request.matchdict['job_id_dest']} (dest)</p>
+        <p>This page only displays differences between jobs. If there was no change in the test, that test will not appear.</p>
       </div>
     </div>
     <div class="container">
-      <table class="table">
+      <table id="compare-table" class="table">
         <thead>
           <tr>
             <th>Test id</th>
@@ -43,7 +44,7 @@
         </thead>
         <tbody>
           <tr tal:repeat="r res" class="table-row table-bordered">
-            <td >${r[0]}</td>
+            <td ><a href="/${r[0]}">${r[0]}</a></td>
             <td >${r[1]}</td>
             <td >${r[2]}</td>
             <td >${r[3]}</td>
@@ -61,10 +62,10 @@
     <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
-    <script>
-    jQuery(document).ready(function($) {
-      
-    });
+     <script>
+      jQuery(document).ready(function($) {
+        $("#compare-table").DataTable();
+      });
     </script>
 
   </body>

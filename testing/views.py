@@ -8,7 +8,8 @@ from pyramid.httpexceptions import (
         HTTPFound,
     )
 
-from sqlalchemy import func
+from sqlalchemy import func, text
+from sqlalchemy.orm import aliased
 
 from .models import (
     DBSession,
@@ -23,15 +24,16 @@ def view_home(request):
     return HTTPFound(location = request.route_url('view_jobs'))
 
 
+
 @view_config(route_name='view_jobs', renderer='templates/home.pt')
 def view_jobs(request):
     jobs = DBSession.query(Job).order_by(Job.create_time.desc()).all()
     return dict(jobs=jobs)
 
 
+
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
-    #batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
     runs = DBSession.query(Run).filter(Run.job_id == request.matchdict['job_id']).all()
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
         Run.job_id == request.matchdict['job_id']).group_by(Run.result).all()
@@ -41,14 +43,16 @@ def view_batch(request):
 def request_job_table(request):
     # Server side processing for DataTables plugin
 
-    #batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
     query = DBSession.query(Run).filter(Run.job_id == request.matchdict['job_id'])
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
+    # Search unimplemented as of yet.
     table.searchable(lambda queryset, userinput: queryset)
 
     return table.json()
+
+
 
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):
@@ -56,26 +60,30 @@ def view_test_run(request):
     return dict(run=run, redirect=request.route_url('view_test', test_id=run.test_id))
 
 
+
 @view_config(route_name='view_test', renderer='templates/testcase.pt')
 def view_test(request):
     runs = DBSession.query(Run).filter(
         Run.test_id == request.matchdict['test_id']).order_by(Run.id.desc()).all()
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
-        Run.test_id == 'tests/' + request.matchdict['test_id']).group_by(Run.result).all()
+        Run.test_id == request.matchdict['test_id']).group_by(Run.result).all()
     return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))
+
+
 
 @view_config(route_name='view_compare', renderer='templates/compare.pt')
 def view_compare(request):
 
-    res = DBSession.execute('''select test1.test_id, test1.id, test2.id, test1.result, test2.result 
+    res = DBSession.execute(text('''select test1.test_id, test1.id, test2.id, test1.result, test2.result 
     from 
       cr1013.test_runs test1 inner join cr1013.test_runs test2
     on 
-      test1.job_id = 199 
+      test1.job_id = :source 
     and 
-      test2.job_id = 201 
+      test2.job_id = :dest
     and 
       test1.test_id = test2.test_id
     and
-      test1.result <> test2.result;''');
+      test1.result <> test2.result;'''), {'source':request.matchdict['job_id_source'], 
+                                          'dest':  request.matchdict['job_id_dest']}  );
     return dict(res=res)

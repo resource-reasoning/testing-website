@@ -26,9 +26,30 @@
         <p>recap of run of <i>${run.test_id}</i> in job ${run.batch.job_id}</p>
       </div>
     </div>
+
+    <!-- NavBar -->
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          <div class="navbar-header">
+            <a class="navbar-brand" href="/">Home</a>
+          </div>
+
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+              <li><a href="${redirect}">View Test History</a></li>
+            </ul>
+          </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+      </nav>
+    </div>
+
     <div class="container">
       <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-2">
+          <p>Run information:</p>
           <table class="table table-bordered">
             <tbody>
               <tr>
@@ -50,16 +71,11 @@
             </tbody>
           </table>
         </div>
-        <div class="col-sm-9 col-centered">
-            <a role="button" class="btn btn-primary" href="${redirect}">View Test History</a>
-        </div>
-      </div>
-      <div class="row"> 
-        <div class="col-sm-6">
+        <div class="col-sm-5">
           <p>Stdout dump:</p>
           <pre>${run.stdout}</pre>
         </div>
-        <div class="col-sm-6">
+        <div class="col-sm-5">
           <p>Stderr dump:</p>
           <pre>${run.stderr}</pre>
         </div>
