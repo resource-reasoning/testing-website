@@ -8,7 +8,7 @@ from pyramid.httpexceptions import (
         HTTPFound,
     )
 
-from sqlalchemy import func, text
+from sqlalchemy import func, text, cast, Text, or_
 from sqlalchemy.orm import aliased
 
 from .models import (
@@ -48,7 +48,8 @@ def request_job_table(request):
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
     # Search unimplemented as of yet.
-    table.searchable(lambda queryset, userinput: queryset)
+    table.searchable(lambda queryset, userinput: queryset.filter(or_(cast(Run.result, Text).\
+                like('%' + userinput.upper() + '%'), Run.test_id.op('~')(userinput))))
 
     return table.json()
 
