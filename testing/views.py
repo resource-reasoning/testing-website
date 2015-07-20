@@ -17,6 +17,8 @@ from .models import (
     Batch,
     Run,
     TestCase,
+    TestGroup,
+    TestGroupMembership
     )
 
 @view_config(route_name='view_home')
@@ -58,7 +60,9 @@ def request_job_table(request):
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):
     run = DBSession.query(Run).filter(Run.id == request.matchdict['test_id']).first()
-    return dict(run=run, redirect=request.route_url('view_test', test_id=run.test_id))
+    groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
+                filter(TestGroupMembership.test_id == run.test_id).all()
+    return dict(run=run, groups=groups, redirect=request.route_url('view_test', test_id=run.test_id))
 
 
 
@@ -68,7 +72,9 @@ def view_test(request):
         Run.test_id == request.matchdict['test_id']).order_by(Run.id.desc()).all()
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
         Run.test_id == request.matchdict['test_id']).group_by(Run.result).all()
-    return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))
+    groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
+                filter(TestGroupMembership.test_id == request.matchdict['test_id']).all()
+    return dict(runs=runs, runs_stats=runs_stats, groups=groups, root_url=request.route_url('view_home'))
 
 
 
