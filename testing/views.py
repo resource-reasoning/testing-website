@@ -95,6 +95,11 @@ def view_compare(request):
                                           'dest':  request.matchdict['job_id_dest']}  );
     return dict(res=res)
 
+@view_config(route_name='view_groups', renderer='templates/groups.pt')
+def view_groups(request):
+    groups = DBSession.query(TestGroup).all()
+    return dict(groups=groups)
+
 @view_config(route_name='view_group', renderer='templates/group.pt')
 def view_group(request):
     group = DBSession.query(TestGroup).filter(TestGroup.id == request.matchdict['group_id']).first()

@@ -31,6 +31,26 @@
         <p>This page only displays differences between jobs. If there was no change in the test, that test will not appear.</p>
       </div>
     </div>
+
+    <!-- NavBar -->
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          <div class="navbar-header">
+            <a class="navbar-brand" href="${request.route_url('view_home')}">Home</a>
+          </div>
+
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+              <a class="navbar-brand" href="${request.route_url('view_groups')}">Groups</a>
+            </ul>
+          </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+      </nav>
+    </div>
+
     <div class="container">
       <table id="compare-table" class="table">
         <thead>

@@ -23,6 +23,7 @@ def main(global_config, **settings):
     config.add_route('request_job_table', '/job/table/{job_id}')
     config.add_route('view_test_run', '/test/{test_id}')
     config.add_route('view_test', '/tests/{test_id:.*}')
+    config.add_route('view_groups','/groups/')
     config.add_route('view_group', '/group/{group_id}')
     config.scan()
     return config.make_wsgi_app()
