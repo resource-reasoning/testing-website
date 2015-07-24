@@ -8,7 +8,7 @@ from pyramid.httpexceptions import (
         HTTPFound,
     )
 
-from sqlalchemy import func, text, cast, Text, column
+from sqlalchemy import func, text, cast, Text, or_, column
 from sqlalchemy.orm import aliased
 
 from .models import (

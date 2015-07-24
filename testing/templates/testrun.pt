@@ -20,7 +20,7 @@
   
   <body>
 
-    <div class="jumbotron">
+    <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
         <h1>/test/${run.id}</h1>
         <p>recap of run of <i>${run.test_id}</i> in job ${run.batch.job_id}</p>
@@ -39,7 +39,7 @@
           <!-- Collect the nav links, forms, and other content for toggling -->
           <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <ul class="nav navbar-nav">
-              <a class="navbar-brand" href="${request.route_url('view_groups')}">Groups</a>
+              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
               <li><a href="${redirect}">View Test History</a></li>
             </ul>
           </div><!-- /.navbar-collapse -->

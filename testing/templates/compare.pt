@@ -24,11 +24,10 @@
   </head>
   
   <body>
-    <div class="jumbotron">
+    <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
         <h1>compare jobs</h1>
         <p>${request.matchdict['job_id_source']} (source) against ${request.matchdict['job_id_dest']} (dest)</p>
-        <p>This page only displays differences between jobs. If there was no change in the test, that test will not appear.</p>
       </div>
     </div>
 
@@ -44,7 +43,7 @@
           <!-- Collect the nav links, forms, and other content for toggling -->
           <div class="collapse navbar-collapse">
             <ul class="nav navbar-nav">
-              <a class="navbar-brand" href="${request.route_url('view_groups')}">Groups</a>
+              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
             </ul>
           </div><!-- /.navbar-collapse -->
         </div><!-- /.container-fluid -->
@@ -52,6 +51,7 @@
     </div>
 
     <div class="container">
+      <p>This page only displays differences between jobs. If there was no change in the test, that test will not appear.</p>
       <table id="compare-table" class="table">
         <thead>
           <tr>
