@@ -24,9 +24,10 @@
   </head>
   
   <body>
-    <div class="jumbotron">
+    <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
         <h1>/job/${request.matchdict['job_id']}</h1>
+        <p>View job recap</p>
       </div>
     </div>
 
@@ -42,7 +43,7 @@
           <!-- Collect the nav links, forms, and other content for toggling -->
           <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
             <ul class="nav navbar-nav">
-              <a class="navbar-brand" href="${request.route_url('view_groups')}">Groups</a>
+              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
             </ul>
           </div><!-- /.navbar-collapse -->
         </div><!-- /.container-fluid -->

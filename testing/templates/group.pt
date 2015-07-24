@@ -24,16 +24,41 @@
   </head>
   
   <body>
-    <div class="jumbotron">
+    <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
         <h1>/group/${group.id}</h1>
         <p>View info on group ${request.matchdict['group_id']}</p>
       </div>
     </div>
+
+    <!-- NavBar -->
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          <div class="navbar-header">
+            <a class="navbar-brand" href="${request.route_url('view_home')}">Home</a>
+          </div>
+
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
+            </ul>
+          </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+      </nav>
+    </div>
+
     <div class="container">
       <div class="row">
+        <div class="col-sm-11">
         <label for="group-description">Group Description:</label>
         <p id="group-description">${group.description}</p>
+        </div>
+        <div class="col-sm-1">
+          <button id="delete_group" class="btn btn-danger">Delete Group</button>
+        </div>
       </div>
       <div class="row"> 
         <table id="cases-table" class="table table-bordered">
@@ -62,6 +87,19 @@
     <script>
       jQuery(document).ready(function($) {
         $("#cases-table").DataTable();
+        
+        var second = false;
+        $("#delete_group").click(function () {
+          if (second) {
+            $.post('${request.route_url("view_groups")}', {group_deleted: 'yes', group_id: ${request.matchdict["group_id"]}});
+            window.document.location = '${request.route_url("view_groups")}';
+          } else {
+            $(this).removeClass("btn-danger");
+            $(this).addClass("btn-warning");
+            $(this).text("Are you sure?");
+            second = true;
+          }
+        });
       });
     </script>
 

@@ -8,7 +8,7 @@ from pyramid.httpexceptions import (
         HTTPFound,
     )
 
-from sqlalchemy import func, text, cast, Text, column
+from sqlalchemy import func, text, cast, Text, or_, column
 from sqlalchemy.orm import aliased
 
 from .models import (
@@ -45,7 +45,7 @@ def view_batch(request):
 def request_job_table(request):
     # Server side processing for DataTables plugin
 
-    query = DBSession.query(Run).filter(Run.job_id == request.matchdict['job_id'])
+    query = DBSession.query(Run.id, Run.test_id, Run.result).filter(Run.job_id == request.matchdict['job_id'])
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
@@ -62,7 +62,7 @@ def request_job_table_nogroup(request):
     # Double query required to figure out which tests do NOT have a group yet.
     query = DBSession.query(Run.test_id).join(TestGroupMembership, TestGroupMembership.test_id == Run.test_id).\
                 filter(Run.job_id == request.matchdict['job_id'])
-    actual = DBSession.query(Run).filter(~Run.test_id.in_(query)).filter(Run.job_id == request.matchdict['job_id'])
+    actual = DBSession.query(Run.id, Run.test_id, Run.result).filter(~Run.test_id.in_(query)).filter(Run.job_id == request.matchdict['job_id'])
 
     table = DataTable(request.GET, Run, actual, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
@@ -113,6 +113,9 @@ def view_compare(request):
 
 @view_config(route_name='view_groups', renderer='templates/groups.pt')
 def view_groups(request):
+    if 'group_deleted' in request.params:
+        group_id = request.params['group_id']
+        DBSession.delete(DBSession.query(TestGroup).get(group_id))
     groups = DBSession.query(TestGroup).all()
     return dict(groups=groups)
 
@@ -122,3 +125,14 @@ def view_group(request):
     cases = DBSession.query(TestGroupMembership).\
                 filter(TestGroupMembership.group_id == request.matchdict['group_id']).all()
     return dict(group=group, cases=cases)
+
+@view_config(route_name='create_group', renderer='templates/create_group.pt')
+def create_group(request):
+    if 'form.submitted' in request.params:
+        desc = request.params['group_desc']
+        group = TestGroup(description=desc)
+        DBSession.add(group)
+        DBSession.flush()
+        group_id = group.id
+        return HTTPFound(location=request.route_url('view_group', group_id=group_id))
+    return dict()
