@@ -26,8 +26,8 @@
   <body>
     <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
-        <h1>/groups</h1>
-        <p>Recap of existing groups</p>
+        <h1>/group/create</h1>
+        <p>Create a new test group</p>
       </div>
     </div>
 
@@ -43,10 +43,10 @@
           <!-- Collect the nav links, forms, and other content for toggling -->
           <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
              <ul class="nav navbar-nav">
-              <li class="active"><a href="#">Groups<span class="sr-only">(current)</span></a></li>
+              <li><a href="#">Groups<span class="sr-only">(current)</span></a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
-              <li><a href="${request.route_url('create_group')}">Create Group</a></li>
+              <li class="active"><a href="#">Create Group</a></li>
             </ul>
           </div><!-- /.navbar-collapse -->
         </div><!-- /.container-fluid -->
@@ -54,21 +54,16 @@
     </div>
 
     <div class="container">
-      <div class="row"> 
-        <table id="cases-table" class="table table-bordered">
-          <thead>
-            <tr>
-              <th>Group id</th>
-              <th>Group Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="case groups">
-              <td><a href="${request.route_url('view_group', group_id=case.id)}">${case.id}</a></td>
-              <td>${case.description}</td>
-            </tr>
-          </tbody>
-        </table>
+      <p>Enter a description for the new group. You will then be shown the group page from where you can add tests.</p>
+      <div class="row">
+        <form action="/group/create" method="post">
+          <div class="form-group">
+            <label for="group_desc">Description</label>
+            <!-- <input type="text" class="form-control" id="Group Description" placeholder="Description"> -->
+            <textarea class="form-control" rows="2" name="group_desc"></textarea>
+          </div>
+          <button type="submit" name="form.submitted" class="btn btn-default">Create</button>
+        </form>
       </div>
     </div>
 
@@ -79,12 +74,6 @@
     <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
     <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-
-    <script>
-      jQuery(document).ready(function($) {
-        $("#cases-table").DataTable();
-      });
-    </script>
 
   </body>
 

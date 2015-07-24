@@ -52,8 +52,13 @@
 
     <div class="container">
       <div class="row">
+        <div class="col-sm-11">
         <label for="group-description">Group Description:</label>
         <p id="group-description">${group.description}</p>
+        </div>
+        <div class="col-sm-1">
+          <button id="delete_group" class="btn btn-danger">Delete Group</button>
+        </div>
       </div>
       <div class="row"> 
         <table id="cases-table" class="table table-bordered">
@@ -82,6 +87,19 @@
     <script>
       jQuery(document).ready(function($) {
         $("#cases-table").DataTable();
+        
+        var second = false;
+        $("#delete_group").click(function () {
+          if (second) {
+            $.post('${request.route_url("view_groups")}', {group_deleted: 'yes', group_id: ${request.matchdict["group_id"]}});
+            window.document.location = '${request.route_url("view_groups")}';
+          } else {
+            $(this).removeClass("btn-danger");
+            $(this).addClass("btn-warning");
+            $(this).text("Are you sure?");
+            second = true;
+          }
+        });
       });
     </script>
 
