@@ -26,8 +26,8 @@
   <body>
     <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
-        <h1>/group/${group.id}</h1>
-        <p>View info on group ${request.matchdict['group_id']}</p>
+        <h1>/group/add/${request.matchdict['group_id']}</h1>
+        <p>Add a test to group ${request.matchdict['group_id']}</p>
       </div>
     </div>
 
@@ -46,6 +46,7 @@
               <li><a href="${request.route_url('view_groups')}">Groups</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
+              <li><a href="${request.route_url('view_group', group_id=request.matchdict['group_id'])}">Group ${request.matchdict['group_id']}</a></li>
               <li><a href="${request.route_url('create_group')}">Create Group</a></li>
             </ul>
           </div><!-- /.navbar-collapse -->
@@ -55,31 +56,21 @@
 
     <div class="container">
       <div class="row">
-        <div class="col-sm-7">
-        <label for="group-description">Group Description:</label>
-        <p id="group-description">${group.description}</p>
+        <div class="col-sm-6">
+          <label for="desc">How this works:</label>
+          <p id="desc">Select one or more rows <em>per table view</em> then click Add Selected. Switching page will not save currently selected rows. Selection is not committed until you click Add Selected.</p>
         </div>
-        <div class="col-sm-5">
-          <button id="add_test" class="btn btn-success">Add Test</button>
-          <button id="delete_selected" class="btn btn-warning">Delete selected</button>
-          <button id="delete_group" class="btn btn-warning">Delete Group</button>
-          <button id="delete_no" class="btn btn-success">No</button>
+        <div class="col-sm-6">
+          <button class="btn btn-warning pull-right" id="add-selected">Add Selected</button>
         </div>
       </div>
       <div class="row"> 
         <table id="cases-table" class="table table-bordered">
           <thead>
             <tr>
-              <th>id</th>
-              <th>Test Id</th>
+              <th>Test id</th>
             </tr>
           </thead>
-          <tbody>
-            <tr tal:repeat="case cases">
-              <td>${case.test_id}</td>
-              <td><a href="${request.route_url('view_test', test_id=case.test_id)}">${case.test_id}</a></td>
-            </tr>
-          </tbody>
         </table>
       </div>
     </div>
@@ -94,64 +85,42 @@
 
     <script>
       jQuery(document).ready(function($) {
-        $("#delete_no").hide()
         var table = $("#cases-table").DataTable( {
+          "processing": true,
+          "serverSide": true,
+          "ajax" : {
+            "url" : "${request.route_url('request_group_tests', group_id=request.matchdict['group_id'])}",
+            "type" : "GET"
+          },
           "columns" : [
-            {"visible": false},
-            null
-          ]
-        });
-
-        $("#add_test").click(function () {
-          window.document.location = '${request.route_url("view_group_add", group_id=request.matchdict["group_id"])}';
+            { 
+              "data" : "id",
+              "render" : function (data, type, row) {
+                return "<a href='" + row.DT_RowData.link + "'>" + data + "</a>";
+              }
+            }          ]
         });
 
         $("#cases-table tbody").on( 'click', 'tr', function () {
           $(this).toggleClass('selected');
         });
 
-        $("#delete_selected").click(function () {
+        $("#add-selected").click(function () {
           var rows = table.rows('.selected').data();
           testsarr = new Array();
           for (var i = 0; i < rows.length; i++){
-            testsarr[i] = rows[i][0];
+            testsarr[i] = rows[i]["id"];
           };
           var postData = { tests: testsarr}
           $.ajax({
             type: "POST",
-            url: "${request.route_url('group_remove_test', group_id=request.matchdict['group_id'])}",
+            url: "${request.route_url('group_add_test', group_id=request.matchdict['group_id'])}",
             data: postData,
             dataType: "json",
             traditional: "true"
           });
-          location.reload();
+          table.draw();
         });
-        
-        var second = false;
-        $("#delete_group").click(function () {
-          if (second) {
-            $.ajax({
-              url: '${request.current_route_url()}',
-              type: 'DELETE'
-            })
-            window.document.location = '${request.route_url("view_groups")}';
-          } else {
-            $(this).removeClass("btn-warning");
-            $(this).addClass("btn-danger");
-            $("#delete_no").show();
-            $(this).text("Are you sure?");
-            second = true;
-          }
-        });
-
-        $("#delete_no").click(function () {
-          $("#delete_group").removeClass("btn-danger");
-          $("#delete_group").addClass("btn-warning");
-          $("#delete_group").text("Delete Group");
-          second = false;
-          $(this).hide();          
-        });
-
       });
     </script>
 
