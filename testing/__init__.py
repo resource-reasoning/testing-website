@@ -32,6 +32,7 @@ def main(global_config, **settings):
     config.add_route('create_group', '/group/create')
     config.add_route('view_group_add', '/group/add/{group_id}')
     config.add_route('group_add_test', '/group/addtest/{group_id}')
+    config.add_route('group_remove_test', '/group/removetest/{group_id}')
     config.add_route('request_group_tests', '/group/add/table/{group_id}')
     config.add_route('view_group', '/group/{group_id}')
     config.scan()

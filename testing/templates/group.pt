@@ -55,24 +55,28 @@
 
     <div class="container">
       <div class="row">
-        <div class="col-sm-8">
+        <div class="col-sm-7">
         <label for="group-description">Group Description:</label>
         <p id="group-description">${group.description}</p>
         </div>
-        <div class="col-sm-4">
-          <button id="add_test" class="btn btn-default">Add Test</button>
-          <button id="delete_group" class="btn btn-danger">Delete Group</button>
+        <div class="col-sm-5">
+          <button id="add_test" class="btn btn-success">Add Test</button>
+          <button id="delete_selected" class="btn btn-warning">Delete selected</button>
+          <button id="delete_group" class="btn btn-warning">Delete Group</button>
+          <button id="delete_no" class="btn btn-success">No</button>
         </div>
       </div>
       <div class="row"> 
         <table id="cases-table" class="table table-bordered">
           <thead>
             <tr>
-              <th>Test id</th>
+              <th>id</th>
+              <th>Test Id</th>
             </tr>
           </thead>
           <tbody>
             <tr tal:repeat="case cases">
+              <td>${case.test_id}</td>
               <td><a href="${request.route_url('view_test', test_id=case.test_id)}">${case.test_id}</a></td>
             </tr>
           </tbody>
@@ -90,10 +94,37 @@
 
     <script>
       jQuery(document).ready(function($) {
-        $("#cases-table").DataTable();
+        $("#delete_no").hide()
+        var table = $("#cases-table").DataTable( {
+          "columns" : [
+            {"visible": false},
+            null
+          ]
+        });
 
         $("#add_test").click(function () {
           window.document.location = '${request.route_url("view_group_add", group_id=request.matchdict["group_id"])}';
+        });
+
+        $("#cases-table tbody").on( 'click', 'tr', function () {
+          $(this).toggleClass('selected');
+        });
+
+        $("#delete_selected").click(function () {
+          var rows = table.rows('.selected').data();
+          testsarr = new Array();
+          for (var i = 0; i < rows.length; i++){
+            testsarr[i] = rows[i][0];
+          };
+          var postData = { tests: testsarr}
+          $.ajax({
+            type: "POST",
+            url: "${request.route_url('group_remove_test', group_id=request.matchdict['group_id'])}",
+            data: postData,
+            dataType: "json",
+            traditional: "true"
+          });
+          location.reload();
         });
         
         var second = false;
@@ -105,12 +136,22 @@
             })
             window.document.location = '${request.route_url("view_groups")}';
           } else {
-            $(this).removeClass("btn-danger");
-            $(this).addClass("btn-warning");
+            $(this).removeClass("btn-warning");
+            $(this).addClass("btn-danger");
+            $("#delete_no").show();
             $(this).text("Are you sure?");
             second = true;
           }
         });
+
+        $("#delete_no").click(function () {
+          $("#delete_group").removeClass("btn-danger");
+          $("#delete_group").addClass("btn-warning");
+          $("#delete_group").text("Delete Group");
+          second = false;
+          $(this).hide();          
+        });
+
       });
     </script>
 

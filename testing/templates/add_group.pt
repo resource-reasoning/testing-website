@@ -111,7 +111,6 @@
           for (var i = 0; i < rows.length; i++){
             testsarr[i] = rows[i]["id"];
           };
-          console.log(testsarr);
           var postData = { tests: testsarr}
           $.ajax({
             type: "POST",

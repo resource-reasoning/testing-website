@@ -161,4 +161,14 @@ def group_add_test(request):
         membership = TestGroupMembership(test_id=x, group_id=group_id)
         DBSession.add(membership)
     DBSession.flush()
-    return dict()
+    return dict(success=True)
+
+@view_config(route_name='group_remove_test', request_method='POST', renderer='json')
+def group_remove_test(request):
+    tests = request.params.getall('tests')
+    group_id = request.matchdict['group_id']
+    allTests = DBSession.query(TestGroupMembership).filter(TestGroupMembership.group_id == group_id)
+    for x in tests:   
+        allTests.filter(TestGroupMembership.test_id == x).delete()
+    DBSession.flush()
+    return dict(success=True)
