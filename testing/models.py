@@ -91,4 +91,7 @@ class TestGroupMembership(Base):
     __tablename__ = 'test_group_memberships'
 
     group_id = Column(Integer, ForeignKey('test_groups.id', name='test_group_memberships_group_id_fkey'), primary_key=True)
+    group = relationship('TestGroup', backref=backref('testgroupmemberships', cascade='all, delete-orphan'))
+
     test_id = Column(String, ForeignKey('test_cases.id', name='test_group_memberships_test_id_fkey'), primary_key=True)
+    testcase = relationship('TestCase')

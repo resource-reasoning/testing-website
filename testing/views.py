@@ -36,10 +36,9 @@ def view_jobs(request):
 
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
-    runs = DBSession.query(Run).filter(Run.job_id == request.matchdict['job_id']).all()
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
         Run.job_id == request.matchdict['job_id']).group_by(Run.result).all()
-    return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))
+    return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'))
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
@@ -113,14 +112,14 @@ def view_compare(request):
 
 @view_config(route_name='view_groups', renderer='templates/groups.pt')
 def view_groups(request):
-    if 'group_deleted' in request.params:
-        group_id = request.params['group_id']
-        DBSession.delete(DBSession.query(TestGroup).get(group_id))
     groups = DBSession.query(TestGroup).all()
     return dict(groups=groups)
 
 @view_config(route_name='view_group', renderer='templates/group.pt')
 def view_group(request):
+    if request.method == 'DELETE':
+        DBSession.delete(DBSession.query(TestGroup).get(request.matchdict['group_id']))
+        return HTTPFound(location=request.route_url('view_groups'))
     group = DBSession.query(TestGroup).filter(TestGroup.id == request.matchdict['group_id']).first()
     cases = DBSession.query(TestGroupMembership).\
                 filter(TestGroupMembership.group_id == request.matchdict['group_id']).all()
@@ -135,4 +134,31 @@ def create_group(request):
         DBSession.flush()
         group_id = group.id
         return HTTPFound(location=request.route_url('view_group', group_id=group_id))
+    return dict()
+
+@view_config(route_name='view_group_add', renderer='templates/add_group.pt')
+def view_group_add(request):
+    return dict()
+
+@view_config(route_name='request_group_tests', request_method='GET', renderer='json')
+def request_group_tests(request):
+     # Server side processing for DataTables plugin
+
+    in_cases  = DBSession.query(TestGroupMembership.test_id).\
+                filter(TestGroupMembership.group_id == request.matchdict['group_id'])
+    not_cases = DBSession.query(TestCase).filter(~TestCase.id.in_(in_cases))
+    
+    table = DataTable(request.GET, TestCase, not_cases, ["id"])
+    table.add_data(link=lambda o: request.route_url("view_test", test_id=o.id))
+    table.searchable(lambda queryset, userinput: queryset.filter(TestCase.id.op('~')(userinput)))
+    return table.json()
+
+@view_config(route_name='group_add_test', request_method='POST', renderer='json')
+def group_add_test(request):
+    tests = request.params.getall('tests')
+    group_id = request.matchdict['group_id']
+    for x in tests:   
+        membership = TestGroupMembership(test_id=x, group_id=group_id)
+        DBSession.add(membership)
+    DBSession.flush()
     return dict()

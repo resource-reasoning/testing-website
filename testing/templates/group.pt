@@ -45,6 +45,9 @@
             <ul class="nav navbar-nav">
               <li><a href="${request.route_url('view_groups')}">Groups</a></li>
             </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="${request.route_url('create_group')}">Create Group</a></li>
+            </ul>
           </div><!-- /.navbar-collapse -->
         </div><!-- /.container-fluid -->
       </nav>
@@ -52,11 +55,12 @@
 
     <div class="container">
       <div class="row">
-        <div class="col-sm-11">
+        <div class="col-sm-8">
         <label for="group-description">Group Description:</label>
         <p id="group-description">${group.description}</p>
         </div>
-        <div class="col-sm-1">
+        <div class="col-sm-4">
+          <button id="add_test" class="btn btn-default">Add Test</button>
           <button id="delete_group" class="btn btn-danger">Delete Group</button>
         </div>
       </div>
@@ -87,11 +91,18 @@
     <script>
       jQuery(document).ready(function($) {
         $("#cases-table").DataTable();
+
+        $("#add_test").click(function () {
+          window.document.location = '${request.route_url("view_group_add", group_id=request.matchdict["group_id"])}';
+        });
         
         var second = false;
         $("#delete_group").click(function () {
           if (second) {
-            $.post('${request.route_url("view_groups")}', {group_deleted: 'yes', group_id: ${request.matchdict["group_id"]}});
+            $.ajax({
+              url: '${request.current_route_url()}',
+              type: 'DELETE'
+            })
             window.document.location = '${request.route_url("view_groups")}';
           } else {
             $(this).removeClass("btn-danger");
