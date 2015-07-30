@@ -95,3 +95,12 @@ class TestGroupMembership(Base):
 
     test_id = Column(String, ForeignKey('test_cases.id', name='test_group_memberships_test_id_fkey'), primary_key=True)
     testcase = relationship('TestCase')
+
+class TestRunMembership(Base):
+    __tablename__ = 'test_run_memberships'
+
+    group_id = Column(Integer, ForeignKey('test_groups.id', name='test_run_memberships_group_id_fkey'), primary_key=True)
+    group = relationship('TestGroup', backref=backref('testgroupmemberships', cascade='all, delete-orphan'))
+
+    run_id = Column(Integer, ForeignKey('test_runs.id', name='test_run_memberships_run_id_fkey'), primary_key=True)
+    run = relationship('Run')
