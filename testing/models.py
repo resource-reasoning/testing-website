@@ -81,6 +81,14 @@ class TestGroup(Base):
     id = Column(Integer, primary_key=True)
     description = Column(Text)
 
+class Classifier(Base):
+    __tablename__ = 'classifiers'
+
+    id = Column(Integer, primary_key=True)
+    field = Column(String, nullable=False)
+    operator = Column(String, nullable=False)
+    value = Column(String, nullable=False)
+
 class FailGroupMembership(Base):
     __tablename__ = 'fail_group_memberships'
 
@@ -100,7 +108,16 @@ class TestRunMembership(Base):
     __tablename__ = 'test_run_memberships'
 
     group_id = Column(Integer, ForeignKey('test_groups.id', name='test_run_memberships_group_id_fkey'), primary_key=True)
-    group = relationship('TestGroup', backref=backref('testgroupmemberships', cascade='all, delete-orphan'))
+    group = relationship('TestGroup', backref=backref('testrunmemberships', cascade='all, delete-orphan'))
 
     run_id = Column(Integer, ForeignKey('test_runs.id', name='test_run_memberships_run_id_fkey'), primary_key=True)
     run = relationship('Run')
+
+class GroupClassifierMembership(Base):
+    __tablename__ = 'group_classifier_membership'
+
+    group_id = Column(Integer, ForeignKey('test_groups.id', name='group_classifier_memberships_group_id_fkey'), primary_key=True)
+    group = relationship('TestGroup', backref=backref('groupclassifiermemberships', cascade='all, delete-orphan'))
+
+    classifier_id = Column(Integer, ForeignKey('classifiers.id', name='group_classifier_memberships_classifier_id_fkey'), primary_key=True)
+    classifier = relationship('Classifier')
