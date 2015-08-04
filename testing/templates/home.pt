@@ -10,10 +10,7 @@
 
     <!-- Bootstrap core CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-
-     <!-- DataTables CSS -->
-    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
-    <link rel="stylesheet" href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css">
+    
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -52,6 +49,25 @@
     </div>
 
     <div class="container">
+      <div class="row">
+        <div class="col-sm-12">        
+          <canvas id="job-chart" width="1100" height="300"></canvas>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-3">  
+          <table class="table table-bordered">
+            <tbody>
+              <tr>
+                <td bgcolor="#00CC00">Passes</td>
+                <td bgcolor="#E60000">Fails</td>
+                <td bgcolor="#FFCC00">Aborts</td>
+                <td bgcolor="#E6B8E6">Timeouts</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <table class="table table-hover">
         <thead>
           <tr>
@@ -79,13 +95,67 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>    
+
+    <!-- Chart.js files via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 
     <script>
     jQuery(document).ready(function($) {
       
       $(".table-row").click(function() {
           window.document.location = $(this).data("url");
+      });
+
+      var data = {
+        // A labels array that can contain any sort of values
+        labels: ${labels},
+        // Our series array that contains series objects or in this case series data arrays
+        datasets: [
+          {
+            label: "Passed",
+            strokeColor: "#00CC00",
+            pointColor: "#00B800",
+            pointStrokeColor: "#00B800",
+            pointHighlightFill: "#fff",
+            data: ${series['passes']} 
+          },
+          {
+            label: "Failed",
+            strokeColor: "#E60000",
+            pointColor: "#CF0000",
+            pointStrokeColor: "#CF0000",
+            pointHighlightFill: "#fff",
+            data: ${series['fails']} 
+          },
+          {
+            label: "Aborted",
+            strokeColor: "#FFCC00",
+            pointColor: "#E6B800",
+            pointStrokeColor: "#E6B800",
+            pointHighlightFill: "#fff",
+            data: ${series['aborts']} 
+          },
+          {
+            label: "Timeout",
+            strokeColor: "#FFCCFF",
+            pointColor: "#E6B8E6",
+            pointStrokeColor: "#E6B8E6",
+            pointHighlightFill: "#fff",
+            data: ${series['timeouts']} 
+          }
+        ]
+      };
+
+      var ctx = $("#job-chart").get(0).getContext("2d");
+      console.log(ctx);
+      var jobLineChart = new Chart(ctx).Line(data, {
+        scaleOverride : true,
+        scaleSteps : 5,
+        scaleStepWidth : 2500,
+        scaleStartValue : 0,
+        datasetFill : false,
+        pointHitDetectionRadius : 3 
       });
 
     });

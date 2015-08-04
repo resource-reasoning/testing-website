@@ -31,7 +31,21 @@ def view_home(request):
 @view_config(route_name='view_jobs', renderer='templates/home.pt')
 def view_jobs(request):
     jobs = DBSession.query(Job).order_by(Job.create_time.desc()).all()
-    return dict(jobs=jobs)
+
+    stats = DBSession.query(Stats).order_by(Stats.job_id.desc()).limit(50)
+    labels = []
+    passes = []
+    fails = []
+    aborts = []
+    timeouts = []
+    for job in stats[::-1]:
+        labels.append(job.job_id)
+        passes.append(job.passes)
+        fails.append(job.fails)
+        aborts.append(job.aborts)
+        timeouts.append(job.timeouts)
+    series =dict(passes=passes, fails=fails, aborts=aborts, timeouts=timeouts)
+    return dict(jobs=jobs, labels=labels, series=series)
 
 
 
