@@ -54,9 +54,25 @@
       <div class="row">
         <table class="table table-bordered">
           <tbody>
-            <tr tal:repeat="stat runs_stats">
-              <td>${stat[0]}</td>
-              <td>${stat[1]}</td>
+            <tr>
+              <td>Passes</td>
+              <td>${runs_stats.passes}</td>
+            </tr>
+            <tr>
+              <td>Fails</td>
+              <td>${runs_stats.fails}</td>
+            </tr>
+            <tr>
+              <td>Aborts</td>
+              <td>${runs_stats.aborts}</td>
+            </tr>
+            <tr>
+              <td>Timeouts</td>
+              <td>${runs_stats.timeouts}</td>
+            </tr>
+            <tr>
+              <td>Unknowns</td>
+              <td>${runs_stats.unknowns}</td>
             </tr>
           </tbody>
         </table>

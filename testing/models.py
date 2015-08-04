@@ -116,3 +116,16 @@ class TestRunMembership(Base):
 
     run_id = Column(Integer, ForeignKey('test_runs.id', name='test_run_memberships_run_id_fkey'), primary_key=True)
     run = relationship('Run')
+
+class Stats(Base):
+    __tablename__ = 'test_job_stats'
+
+    id = Column(Integer, primary_key=True)
+
+    job_id   = Column(Integer, ForeignKey('test_jobs.id', name='test_job_stats_job_id_fkey'))
+    
+    passes   = Column(Integer)
+    fails    = Column(Integer)
+    aborts   = Column(Integer)
+    unknowns = Column(Integer)
+    timeouts = Column(Integer)
