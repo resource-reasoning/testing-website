@@ -38,13 +38,15 @@ def view_jobs(request):
     fails = []
     aborts = []
     timeouts = []
+    unknowns = []
     for job in stats[::-1]:
         labels.append(job.job_id)
         passes.append(job.passes)
         fails.append(job.fails)
         aborts.append(job.aborts)
         timeouts.append(job.timeouts)
-    series =dict(passes=passes, fails=fails, aborts=aborts, timeouts=timeouts)
+        unknowns.append(job.unknowns)
+    series =dict(passes=passes, fails=fails, aborts=aborts, timeouts=timeouts, unknowns=unknowns)
     return dict(jobs=jobs, labels=labels, series=series)
 
 

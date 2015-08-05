@@ -55,17 +55,11 @@
         </div>
       </div>
       <div class="row">
-        <div class="col-sm-3">  
-          <table class="table table-bordered">
-            <tbody>
-              <tr>
-                <td bgcolor="#00CC00">Passes</td>
-                <td bgcolor="#E60000">Fails</td>
-                <td bgcolor="#FFCC00">Aborts</td>
-                <td bgcolor="#E6B8E6">Timeouts</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="col-sm-12 data-toggles">
+          <button class="passes btn btn-default">Passes</button>
+          <button class="fails btn btn-default">Fails</button>
+          <button class="aborts btn">Aborts</button>
+          <button class="timeouts btn">Timeouts</button>
         </div>
       </div>
       <table class="table table-hover">
@@ -102,40 +96,81 @@
 
     <script>
     jQuery(document).ready(function($) {
-      
+
       $(".table-row").click(function() {
           window.document.location = $(this).data("url");
       });
+
+      // Charting with toggles.
+      
+      $(".data-toggles button").click(function () {
+        currentChart.destroy();
+        $(this).toggleClass('btn-default');
+        checkSelected();
+        data = {
+            labels: ${labels},
+            datasets: [ passesData, failsData, abortsData, timeoutsData ]
+        };     
+        newChart = new Chart(ctx).Line(data, options);
+        currentChart = newChart;
+      });
+
+      var checkSelected = function () {
+        if ($(".passes").hasClass("btn-default")) {
+          passesData = {
+            label: "Passed",
+            strokeColor: "#00CC00",
+            pointColor: "#00B800",
+            pointStrokeColor: "#00B800",
+            pointHighlightFill: "#fff",
+            data: ${series['passes']}             
+          }
+        } else {
+          passesData = {}
+        }
+        if ($(".fails").hasClass("btn-default")) {
+          failsData = {
+            label: "Failed",
+            strokeColor: "#E60000",
+            pointColor: "#CF0000",
+            pointStrokeColor: "#CF0000",
+            pointHighlightFill: "#fff",
+            data: ${series['fails']}          
+          }
+        } else {
+          failsData = {}
+        }
+        if ($(".aborts").hasClass("btn-default")) {
+          abortsData = {
+            label: "Aborted",
+            strokeColor: "#FFCC00",
+            pointColor: "#E6B800",
+            pointStrokeColor: "#E6B800",
+            pointHighlightFill: "#fff",
+            data: ${series['aborts']}       
+          }
+        } else {
+          abortsData = {}
+        };
+        if ($(".timeouts").hasClass("btn-default")) {
+          timeoutsData = {
+            label: "Timeout",
+            strokeColor: "#FFCCFF",
+            pointColor: "#E6B8E6",
+            pointStrokeColor: "#E6B8E6",
+            pointHighlightFill: "#fff",
+            data: ${series['timeouts']}     
+          }
+        } else {
+          timeoutsData = {}
+        };
+      };
 
       var data = {
         // A labels array that can contain any sort of values
         labels: ${labels},
         // Our series array that contains series objects or in this case series data arrays
         datasets: [
-          {
-            label: "Passed",
-            strokeColor: "#00CC00",
-            pointColor: "#00B800",
-            pointStrokeColor: "#00B800",
-            pointHighlightFill: "#fff",
-            data: ${series['passes']} 
-          },
-          {
-            label: "Failed",
-            strokeColor: "#E60000",
-            pointColor: "#CF0000",
-            pointStrokeColor: "#CF0000",
-            pointHighlightFill: "#fff",
-            data: ${series['fails']} 
-          },
-          {
-            label: "Aborted",
-            strokeColor: "#FFCC00",
-            pointColor: "#E6B800",
-            pointStrokeColor: "#E6B800",
-            pointHighlightFill: "#fff",
-            data: ${series['aborts']} 
-          },
           {
             label: "Timeout",
             strokeColor: "#FFCCFF",
@@ -147,16 +182,26 @@
         ]
       };
 
-      var ctx = $("#job-chart").get(0).getContext("2d");
-      console.log(ctx);
-      var jobLineChart = new Chart(ctx).Line(data, {
+      var options = {
+        animation : false,
         scaleOverride : true,
         scaleSteps : 5,
         scaleStepWidth : 2500,
         scaleStartValue : 0,
         datasetFill : false,
         pointHitDetectionRadius : 3 
-      });
+      };
+
+      var ctx = $("#job-chart").get(0).getContext("2d");
+
+      checkSelected();
+      data = {
+        labels: ${labels},
+        datasets: [ passesData, failsData, abortsData, timeoutsData ]
+      };
+      baseChart = new Chart(ctx).Line(data, options);
+      currentChart = baseChart;
+
 
     });
     </script>
