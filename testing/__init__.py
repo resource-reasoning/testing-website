@@ -21,7 +21,6 @@ def main(global_config, **settings):
     config.add_route('view_jobs', '/jobs')
     config.add_route('view_job' , '/job/{job_id}')
     config.add_route('request_job_table', '/job/table/{job_id}')
-    config.add_route('request_job_table_nogroup', '/job/nogroup/{job_id}')
     
     config.add_route('view_compare', '/compare/{job_id_dest}/{job_id_source}')
     

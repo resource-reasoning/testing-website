@@ -22,11 +22,16 @@ from .models import (
     Stats
     )
 
+
+
+#### Home page and redirection ###
 @view_config(route_name='view_home')
 def view_home(request):
     return HTTPFound(location = request.route_url('view_jobs'))
 
 
+
+### Jobs view: All jobs + statistical recap ###
 
 @view_config(route_name='view_jobs', renderer='templates/home.pt')
 def view_jobs(request):
@@ -51,6 +56,8 @@ def view_jobs(request):
 
 
 
+### Single Job view and server side processing route ###
+
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
     runs_stats = DBSession.query(Stats).filter(Stats.job_id == request.matchdict['job_id']).first()
@@ -70,23 +77,9 @@ def request_job_table(request):
 
     return table.json()
 
-@view_config(route_name='request_job_table_nogroup', request_method='GET', renderer='json')
-def request_job_table_nogroup(request):
-    # Server side processing for DataTables plugin
-
-    # Double query required to figure out which tests do NOT have a group yet.
-    query = DBSession.query(Run.test_id).join(TestGroupMembership, TestGroupMembership.test_id == Run.test_id).\
-                filter(Run.job_id == request.matchdict['job_id'])
-    actual = DBSession.query(Run.id, Run.test_id, Run.result).filter(~Run.test_id.in_(query)).filter(Run.job_id == request.matchdict['job_id'])
-
-    table = DataTable(request.GET, Run, actual, ["test_id", "result"])
-    table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
-    table.searchable(lambda queryset, userinput: queryset.filter(or_(cast(Run.result, Text).\
-                like('%' + userinput.upper() + '%'), Run.test_id.op('~')(userinput))))
-    return table.json()
 
 
-
+### Test run view ###
 
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):
@@ -96,6 +89,8 @@ def view_test_run(request):
     return dict(run=run, groups=groups, redirect=request.route_url('view_test', test_id=run.test_id))
 
 
+
+### Test case view ###
 
 @view_config(route_name='view_test', renderer='templates/testcase.pt')
 def view_test(request):
@@ -108,6 +103,8 @@ def view_test(request):
     return dict(runs=runs, runs_stats=runs_stats, groups=groups, root_url=request.route_url('view_home'))
 
 
+
+### Comparison view ###
 
 @view_config(route_name='view_compare', renderer='templates/compare.pt')
 def view_compare(request):
@@ -125,6 +122,10 @@ def view_compare(request):
       test1.result <> test2.result;'''), {'source':request.matchdict['job_id_source'], 
                                           'dest':  request.matchdict['job_id_dest']}  );
     return dict(res=res)
+
+
+
+### GROUPS: many group view, single group view, addition, creation, deletion routes ###
 
 @view_config(route_name='view_groups', renderer='templates/groups.pt')
 def view_groups(request):

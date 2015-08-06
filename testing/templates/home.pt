@@ -189,7 +189,7 @@
         scaleStepWidth : 2500,
         scaleStartValue : 0,
         datasetFill : false,
-        pointHitDetectionRadius : 3 
+        pointHitDetectionRadius : 5,
       };
 
       var ctx = $("#job-chart").get(0).getContext("2d");
