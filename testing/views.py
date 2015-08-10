@@ -108,21 +108,26 @@ def view_test(request):
 
 @view_config(route_name='view_compare', renderer='templates/compare.pt')
 def view_compare(request):
+    return dict()
 
-    res = DBSession.execute(text('''select test1.test_id, test1.id, test2.id, test1.result, test2.result 
-    from 
-      cr1013.test_runs test1 inner join cr1013.test_runs test2
-    on 
-      test1.job_id = :source 
-    and 
-      test2.job_id = :dest
-    and 
-      test1.test_id = test2.test_id
-    and
-      test1.result <> test2.result;'''), {'source':request.matchdict['job_id_source'], 
-                                          'dest':  request.matchdict['job_id_dest']}  );
-    return dict(res=res)
+@view_config(route_name='compare_table', request_method='GET', renderer='json')
+def compare_table(request):
+    # Server Side processing for Datatables.
 
+    aliased_run = aliased(Run)
+    res = DBSession.query(Run.test_id, Run.id.label('run_id'), aliased_run.id.label('alt_id'), Run.result, aliased_run.result.label("alt_result")).\
+                            join(aliased_run, Run.test_id == aliased_run.test_id).\
+                            filter(Run.job_id == request.matchdict['job_id_source']).\
+                            filter(aliased_run.job_id == request.matchdict['job_id_dest']).\
+                            filter(aliased_run.result != Run.result)
+
+    print res.column_descriptions
+
+    table = DataTable(request.GET, Run, res, [("test_id"), ("run_id"), ("alt_id"), ("result"), ("alt_result")])
+    table.add_data(link      =lambda o: request.route_url("view_test", test_id=o.test_id))
+    table.add_data(sourcelink=lambda o: request.route_url("view_test_run", test_id=o.run_id))
+    table.add_data(destlink  =lambda o: request.route_url("view_test_run", test_id=o.alt_id))
+    return table.json()
 
 
 ### GROUPS: many group view, single group view, addition, creation, deletion routes ###
