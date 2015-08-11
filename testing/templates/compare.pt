@@ -51,21 +51,33 @@
     </div>
 
     <div class="container">
-      <p>This page only displays differences between jobs. If there was no change in the test, that test will not appear.</p>
-      <table id="compare-table" class="table">
-        <thead>
-          <tr>
-            <th>Test id</th>
-            <th>Source Run id</th>
-            <th>Dest Run id</th>
-            <th>Source Res</th>
-            <th>Dest Res</th>
-          </tr>
-        </thead>
-      </table>
+      <div class="row">
+        <div class="col-sm-9">          
+          <p>This page only displays differences between jobs. If there was no change in the test, that test will not appear.</p>
+        </div>
+        <div class="col-sm-3">
+          <button id="save-compare" class="btn btn-default">Save comparison (CSV)</button>      
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          <p></p>
+          <table id="compare-table" class="table">
+            <thead>
+              <tr>
+                <th>Test id</th>
+                <th>Source Run id</th>
+                <th>Dest Run id</th>
+                <th>Source Res</th>
+                <th>Dest Res</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- Bootstrap core JavaScript
+    <!-- Core script. Bootstrap, Datatables, TableTools (ext)
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
@@ -107,6 +119,11 @@
             {
               "data" : "alt_result"
             }     ]
+        });
+
+        $("#save-compare").click(function () {
+          window.open( 
+            "${request.route_path('compare_save', job_id_source=request.matchdict['job_id_source'], job_id_dest=request.matchdict['job_id_dest'])}", '_blank');
         });
       });
     </script>

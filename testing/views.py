@@ -106,6 +106,8 @@ def view_test(request):
 
 ### Comparison view ###
 
+aliased_run = aliased(Run)
+
 @view_config(route_name='view_compare', renderer='templates/compare.pt')
 def view_compare(request):
     return dict()
@@ -114,20 +116,37 @@ def view_compare(request):
 def compare_table(request):
     # Server Side processing for Datatables.
 
-    aliased_run = aliased(Run)
     res = DBSession.query(Run.test_id, Run.id.label('run_id'), aliased_run.id.label('alt_id'), Run.result, aliased_run.result.label("alt_result")).\
                             join(aliased_run, Run.test_id == aliased_run.test_id).\
                             filter(Run.job_id == request.matchdict['job_id_source']).\
                             filter(aliased_run.job_id == request.matchdict['job_id_dest']).\
                             filter(aliased_run.result != Run.result)
 
-    print res.column_descriptions
-
     table = DataTable(request.GET, Run, res, [("test_id"), ("run_id"), ("alt_id"), ("result"), ("alt_result")])
     table.add_data(link      =lambda o: request.route_url("view_test", test_id=o.test_id))
     table.add_data(sourcelink=lambda o: request.route_url("view_test_run", test_id=o.run_id))
     table.add_data(destlink  =lambda o: request.route_url("view_test_run", test_id=o.alt_id))
     return table.json()
+
+@view_config(route_name='compare_save', request_method='GET', renderer='csv')
+def compare_save(request):
+    # Query saving based on Pyramid wiki example: http://pyramid-cookbook.readthedocs.org/en/latest/templates/customrenderers.html
+
+    res = DBSession.query(Run.test_id, Run.id.label('run_id'), aliased_run.id.label('alt_id'), Run.result, aliased_run.result.label("alt_result")).\
+                            join(aliased_run, Run.test_id == aliased_run.test_id).\
+                            filter(Run.job_id == request.matchdict['job_id_source']).\
+                            filter(aliased_run.job_id == request.matchdict['job_id_dest']).\
+                            filter(aliased_run.result != Run.result).all()
+
+    header= ['test_id','src_run_id', 'dst_run_id', 'src_result', 'dst_result']
+    rows = [[item.test_id, item.run_id, item.alt_id, item.result, item.alt_result] for item in res]
+
+    # override attributes of response
+    filename = 'compare' + request.matchdict['job_id_source'] + '_' + request.matchdict['job_id_dest'] + '.csv'
+    request.response.content_disposition = 'attachment;filename=' + filename
+
+    return {'header': header, 'rows': rows}
+
 
 
 ### GROUPS: many group view, single group view, addition, creation, deletion routes ###
