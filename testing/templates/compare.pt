@@ -114,16 +114,20 @@
               }
             },
             {
-              "data" : "result"
+              "data" : "result",
+              "orderable" : false
             },
             {
-              "data" : "alt_result"
+              "data" : "alt_result",
+              "orderable" : false
             }     ]
         });
 
         $("#save-compare").click(function () {
+          var value = $('.dataTables_filter input').val();
+          console.log(value);
           window.open( 
-            "${request.route_path('compare_save', job_id_source=request.matchdict['job_id_source'], job_id_dest=request.matchdict['job_id_dest'])}", '_blank');
+            "${request.route_path('compare_save', job_id_source=request.matchdict['job_id_source'], job_id_dest=request.matchdict['job_id_dest'])}" + "?search=" + value, '_blank');
         });
       });
     </script>

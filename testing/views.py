@@ -8,7 +8,7 @@ from pyramid.httpexceptions import (
         HTTPFound,
     )
 
-from sqlalchemy import func, text, cast, Text, or_, column
+from sqlalchemy import func, text, cast, Text, or_, column, String
 from sqlalchemy.orm import aliased
 
 from .models import (
@@ -126,6 +126,8 @@ def compare_table(request):
     table.add_data(link      =lambda o: request.route_url("view_test", test_id=o.test_id))
     table.add_data(sourcelink=lambda o: request.route_url("view_test_run", test_id=o.run_id))
     table.add_data(destlink  =lambda o: request.route_url("view_test_run", test_id=o.alt_id))
+    table.searchable(lambda queryset, userinput: queryset.\
+            filter(Run.test_id.op('~')(userinput)))
     return table.json()
 
 @view_config(route_name='compare_save', request_method='GET', renderer='csv')
@@ -136,7 +138,13 @@ def compare_save(request):
                             join(aliased_run, Run.test_id == aliased_run.test_id).\
                             filter(Run.job_id == request.matchdict['job_id_source']).\
                             filter(aliased_run.job_id == request.matchdict['job_id_dest']).\
-                            filter(aliased_run.result != Run.result).all()
+                            filter(aliased_run.result != Run.result)
+
+    # Recreate user search:
+    search = request.params['search']
+    if (search != ''): 
+        res = res.filter(Run.test_id.op('~')(search))
+    res = res.all()
 
     header= ['test_id','src_run_id', 'dst_run_id', 'src_result', 'dst_result']
     rows = [[item.test_id, item.run_id, item.alt_id, item.result, item.alt_result] for item in res]
