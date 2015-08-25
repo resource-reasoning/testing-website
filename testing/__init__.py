@@ -1,11 +1,10 @@
 from pyramid.config import Configurator
 from sqlalchemy import engine_from_config
-import sys
-from .models import (
-    DBSession,
-    Base,
-    )
+from sqlalchemy.orm import scoped_session, sessionmaker
+from zope.sqlalchemy import ZopeTransactionExtension
+from .models import Base
 
+DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.

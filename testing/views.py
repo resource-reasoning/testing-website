@@ -11,8 +11,8 @@ from pyramid.httpexceptions import (
 from sqlalchemy import func, text, cast, Text, or_, column, String
 from sqlalchemy.orm import aliased
 
+from . import DBSession
 from .models import (
-    DBSession,
     Job,
     Batch,
     Run,

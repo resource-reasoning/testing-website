@@ -12,8 +12,8 @@ from pyramid.paster import (
 
 from pyramid.scripts.common import parse_vars
 
+from .. import DBSession
 from ..models import (
-    DBSession,
     Job,
     Batch,
     Run,
