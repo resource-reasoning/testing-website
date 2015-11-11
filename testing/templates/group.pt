@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="${request.locale_name}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Test262 test run viewer.">
+
+    <title>Test262 Job Viewer</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+     <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+  
+  <body>
+    <div style="background:#58BCFF !important" class="jumbotron">
+      <div class="container">
+        <h1>/group/${group.id}</h1>
+        <p>View info on group ${request.matchdict['group_id']}</p>
+      </div>
+    </div>
+
+    <!-- NavBar -->
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          <div class="navbar-header">
+            <a class="navbar-brand" href="${request.route_url('view_home')}">Home</a>
+          </div>
+
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="${request.route_url('create_group')}">Create Group</a></li>
+            </ul>
+          </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+      </nav>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-7">
+        <label for="group-description">Group Description:</label>
+        <p id="group-description">${group.description}</p>
+        </div>
+        <div class="col-sm-5">
+          <button id="add_test" class="btn btn-success">Add Test</button>
+          <button id="delete_selected" class="btn btn-warning">Delete selected</button>
+          <button id="delete_group" class="btn btn-warning">Delete Group</button>
+          <button id="delete_no" class="btn btn-success">No</button>
+        </div>
+      </div>
+      <div class="row"> 
+        <table id="cases-table" class="table table-bordered">
+          <thead>
+            <tr>
+              <th>id</th>
+              <th>Test Id</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="case cases">
+              <td>${case.test_id}</td>
+              <td><a href="${request.route_url('view_test', test_id=case.test_id)}">${case.test_id}</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+    <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <script>
+      jQuery(document).ready(function($) {
+        $("#delete_no").hide()
+        var table = $("#cases-table").DataTable( {
+          "columns" : [
+            {"visible": false},
+            null
+          ]
+        });
+
+        $("#add_test").click(function () {
+          window.document.location = '${request.route_url("view_group_add", group_id=request.matchdict["group_id"])}';
+        });
+
+        $("#cases-table tbody").on( 'click', 'tr', function () {
+          $(this).toggleClass('selected');
+        });
+
+        $("#delete_selected").click(function () {
+          var rows = table.rows('.selected').data();
+          testsarr = new Array();
+          for (var i = 0; i < rows.length; i++){
+            testsarr[i] = rows[i][0];
+          };
+          var postData = { tests: testsarr}
+          $.ajax({
+            type: "POST",
+            url: "${request.route_url('group_remove_test', group_id=request.matchdict['group_id'])}",
+            data: postData,
+            dataType: "json",
+            traditional: "true"
+          });
+          location.reload();
+        });
+        
+        var second = false;
+        $("#delete_group").click(function () {
+          if (second) {
+            $.ajax({
+              url: '${request.current_route_url()}',
+              type: 'DELETE'
+            })
+            window.document.location = '${request.route_url("view_groups")}';
+          } else {
+            $(this).removeClass("btn-warning");
+            $(this).addClass("btn-danger");
+            $("#delete_no").show();
+            $(this).text("Are you sure?");
+            second = true;
+          }
+        });
+
+        $("#delete_no").click(function () {
+          $("#delete_group").removeClass("btn-danger");
+          $("#delete_group").addClass("btn-warning");
+          $("#delete_group").text("Delete Group");
+          second = false;
+          $(this).hide();          
+        });
+
+      });
+    </script>
+
+  </body>
+
+</html>

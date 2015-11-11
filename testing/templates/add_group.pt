@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="${request.locale_name}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Test262 test run viewer.">
+
+    <title>Test262 Job Viewer</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+     <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+  
+  <body>
+    <div style="background:#58BCFF !important" class="jumbotron">
+      <div class="container">
+        <h1>/group/add/${request.matchdict['group_id']}</h1>
+        <p>Add a test to group ${request.matchdict['group_id']}</p>
+      </div>
+    </div>
+
+    <!-- NavBar -->
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          <div class="navbar-header">
+            <a class="navbar-brand" href="${request.route_url('view_home')}">Home</a>
+          </div>
+
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="${request.route_url('view_group', group_id=request.matchdict['group_id'])}">Group ${request.matchdict['group_id']}</a></li>
+              <li><a href="${request.route_url('create_group')}">Create Group</a></li>
+            </ul>
+          </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+      </nav>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-6">
+          <label for="desc">How this works:</label>
+          <p id="desc">Select one or more rows <em>per table view</em> then click Add Selected. Switching page will not save currently selected rows. Selection is not committed until you click Add Selected.</p>
+        </div>
+        <div class="col-sm-6">
+          <button class="btn btn-warning pull-right" id="add-selected">Add Selected</button>
+        </div>
+      </div>
+      <div class="row"> 
+        <table id="cases-table" class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Test id</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+    <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <script>
+      jQuery(document).ready(function($) {
+        var table = $("#cases-table").DataTable( {
+          "processing": true,
+          "serverSide": true,
+          "ajax" : {
+            "url" : "${request.route_url('request_group_tests', group_id=request.matchdict['group_id'])}",
+            "type" : "GET"
+          },
+          "columns" : [
+            { 
+              "data" : "id",
+              "render" : function (data, type, row) {
+                return "<a href='" + row.DT_RowData.link + "'>" + data + "</a>";
+              }
+            }          ]
+        });
+
+        $("#cases-table tbody").on( 'click', 'tr', function () {
+          $(this).toggleClass('selected');
+        });
+
+        $("#add-selected").click(function () {
+          var rows = table.rows('.selected').data();
+          testsarr = new Array();
+          for (var i = 0; i < rows.length; i++){
+            testsarr[i] = rows[i]["id"];
+          };
+          var postData = { tests: testsarr}
+          $.ajax({
+            type: "POST",
+            url: "${request.route_url('group_add_test', group_id=request.matchdict['group_id'])}",
+            data: postData,
+            dataType: "json",
+            traditional: "true"
+          });
+          table.draw();
+        });
+      });
+    </script>
+
+  </body>
+
+</html>

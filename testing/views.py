@@ -8,57 +8,216 @@ from pyramid.httpexceptions import (
         HTTPFound,
     )
 
-from sqlalchemy import func
+from sqlalchemy import func, text, cast, Text, or_, column, String
+from sqlalchemy.orm import aliased
 
+from . import DBSession
 from .models import (
-    DBSession,
     Job,
     Batch,
     Run,
     TestCase,
+    TestGroup,
+    TestGroupMembership,
+    Stats
     )
 
+
+
+#### Home page and redirection ###
 @view_config(route_name='view_home')
 def view_home(request):
     return HTTPFound(location = request.route_url('view_jobs'))
 
 
+
+### Jobs view: All jobs + statistical recap ###
+
 @view_config(route_name='view_jobs', renderer='templates/home.pt')
 def view_jobs(request):
     jobs = DBSession.query(Job).order_by(Job.create_time.desc()).all()
-    return dict(jobs=jobs)
 
+    stats = DBSession.query(Stats).order_by(Stats.job_id.desc()).limit(50)
+    labels = []
+    passes = []
+    fails = []
+    aborts = []
+    timeouts = []
+    unknowns = []
+    for job in stats[::-1]:
+        labels.append(job.job_id)
+        passes.append(job.passes)
+        fails.append(job.fails)
+        aborts.append(job.aborts)
+        timeouts.append(job.timeouts)
+        unknowns.append(job.unknowns)
+    series =dict(passes=passes, fails=fails, aborts=aborts, timeouts=timeouts, unknowns=unknowns)
+    return dict(jobs=jobs, labels=labels, series=series)
+
+
+
+### Single Job view and server side processing route ###
 
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
-    batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
-    runs = DBSession.query(Run).filter(Run.batch_id.in_(batches)).all()
-    runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
-        Run.batch_id.in_(batches)).group_by(Run.result).all()
-    return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))
+    runs_stats = DBSession.query(Stats).filter(Stats.job_id == request.matchdict['job_id']).first()
+    return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'))
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
     # Server side processing for DataTables plugin
 
-    batches = DBSession.query(Batch.id).filter(Batch.job_id == request.matchdict['job_id']).subquery()
-    query = DBSession.query(Run).filter(Run.batch_id.in_(batches))
+    query = DBSession.query(Run.id, Run.test_id, Run.result).filter(Run.job_id == request.matchdict['job_id'])
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
+    # Search for similarity in Results or Regex in test_id
+    table.searchable(lambda queryset, userinput: queryset.filter(or_(cast(Run.result, Text).\
+                like('%' + userinput.upper() + '%'), Run.test_id.op('~')(userinput))))
 
     return table.json()
+
+
+
+### Test run view ###
 
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):
     run = DBSession.query(Run).filter(Run.id == request.matchdict['test_id']).first()
-    return dict(run=run, redirect=request.route_url('view_test', test_id=run.test_id))
+    groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
+                filter(TestGroupMembership.test_id == run.test_id).all()
+    return dict(run=run, groups=groups, redirect=request.route_url('view_test', test_id=run.test_id))
 
+
+
+### Test case view ###
 
 @view_config(route_name='view_test', renderer='templates/testcase.pt')
 def view_test(request):
     runs = DBSession.query(Run).filter(
         Run.test_id == request.matchdict['test_id']).order_by(Run.id.desc()).all()
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
-        Run.test_id == 'tests/' + request.matchdict['test_id']).group_by(Run.result).all()
-    return dict(runs=runs, runs_stats=runs_stats, root_url=request.route_url('view_home'))
+        Run.test_id == request.matchdict['test_id']).group_by(Run.result).all()
+    groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
+                filter(TestGroupMembership.test_id == request.matchdict['test_id']).all()
+    return dict(runs=runs, runs_stats=runs_stats, groups=groups, root_url=request.route_url('view_home'))
+
+
+
+### Comparison view ###
+
+aliased_run = aliased(Run)
+
+@view_config(route_name='view_compare', renderer='templates/compare.pt')
+def view_compare(request):
+    return dict()
+
+@view_config(route_name='compare_table', request_method='GET', renderer='json')
+def compare_table(request):
+    # Server Side processing for Datatables.
+
+    res = DBSession.query(Run.test_id, Run.id.label('run_id'), aliased_run.id.label('alt_id'), Run.result, aliased_run.result.label("alt_result")).\
+                            join(aliased_run, Run.test_id == aliased_run.test_id).\
+                            filter(Run.job_id == request.matchdict['job_id_source']).\
+                            filter(aliased_run.job_id == request.matchdict['job_id_dest']).\
+                            filter(aliased_run.result != Run.result)
+
+    table = DataTable(request.GET, Run, res, [("test_id"), ("run_id"), ("alt_id"), ("result"), ("alt_result")])
+    table.add_data(link      =lambda o: request.route_url("view_test", test_id=o.test_id))
+    table.add_data(sourcelink=lambda o: request.route_url("view_test_run", test_id=o.run_id))
+    table.add_data(destlink  =lambda o: request.route_url("view_test_run", test_id=o.alt_id))
+    table.searchable(lambda queryset, userinput: queryset.\
+            filter(Run.test_id.op('~')(userinput)))
+    return table.json()
+
+@view_config(route_name='compare_save', request_method='GET', renderer='csv')
+def compare_save(request):
+    # Query saving based on Pyramid wiki example: http://pyramid-cookbook.readthedocs.org/en/latest/templates/customrenderers.html
+
+    res = DBSession.query(Run.test_id, Run.id.label('run_id'), aliased_run.id.label('alt_id'), Run.result, aliased_run.result.label("alt_result")).\
+                            join(aliased_run, Run.test_id == aliased_run.test_id).\
+                            filter(Run.job_id == request.matchdict['job_id_source']).\
+                            filter(aliased_run.job_id == request.matchdict['job_id_dest']).\
+                            filter(aliased_run.result != Run.result)
+
+    # Recreate user search:
+    search = request.params['search']
+    if (search != ''): 
+        res = res.filter(Run.test_id.op('~')(search))
+    res = res.all()
+
+    header= ['test_id','src_run_id', 'dst_run_id', 'src_result', 'dst_result']
+    rows = [[item.test_id, item.run_id, item.alt_id, item.result, item.alt_result] for item in res]
+
+    # override attributes of response
+    filename = 'compare' + request.matchdict['job_id_source'] + '_' + request.matchdict['job_id_dest'] + '.csv'
+    request.response.content_disposition = 'attachment;filename=' + filename
+
+    return {'header': header, 'rows': rows}
+
+
+
+### GROUPS: many group view, single group view, addition, creation, deletion routes ###
+
+@view_config(route_name='view_groups', renderer='templates/groups.pt')
+def view_groups(request):
+    groups = DBSession.query(TestGroup).all()
+    return dict(groups=groups)
+
+@view_config(route_name='view_group', renderer='templates/group.pt')
+def view_group(request):
+    if request.method == 'DELETE':
+        DBSession.delete(DBSession.query(TestGroup).get(request.matchdict['group_id']))
+        return HTTPFound(location=request.route_url('view_groups'))
+    group = DBSession.query(TestGroup).filter(TestGroup.id == request.matchdict['group_id']).first()
+    cases = DBSession.query(TestGroupMembership).\
+                filter(TestGroupMembership.group_id == request.matchdict['group_id']).all()
+    return dict(group=group, cases=cases)
+
+@view_config(route_name='create_group', renderer='templates/create_group.pt')
+def create_group(request):
+    if 'form.submitted' in request.params:
+        desc = request.params['group_desc']
+        group = TestGroup(description=desc)
+        DBSession.add(group)
+        DBSession.flush()
+        group_id = group.id
+        return HTTPFound(location=request.route_url('view_group', group_id=group_id))
+    return dict()
+
+@view_config(route_name='view_group_add', renderer='templates/add_group.pt')
+def view_group_add(request):
+    return dict()
+
+@view_config(route_name='request_group_tests', request_method='GET', renderer='json')
+def request_group_tests(request):
+     # Server side processing for DataTables plugin
+
+    in_cases  = DBSession.query(TestGroupMembership.test_id).\
+                filter(TestGroupMembership.group_id == request.matchdict['group_id'])
+    not_cases = DBSession.query(TestCase).filter(~TestCase.id.in_(in_cases))
+    
+    table = DataTable(request.GET, TestCase, not_cases, ["id"])
+    table.add_data(link=lambda o: request.route_url("view_test", test_id=o.id))
+    table.searchable(lambda queryset, userinput: queryset.filter(TestCase.id.op('~')(userinput)))
+    return table.json()
+
+@view_config(route_name='group_add_test', request_method='POST', renderer='json')
+def group_add_test(request):
+    tests = request.params.getall('tests')
+    group_id = request.matchdict['group_id']
+    for x in tests:   
+        membership = TestGroupMembership(test_id=x, group_id=group_id)
+        DBSession.add(membership)
+    DBSession.flush()
+    return dict(success=True)
+
+@view_config(route_name='group_remove_test', request_method='POST', renderer='json')
+def group_remove_test(request):
+    tests = request.params.getall('tests')
+    group_id = request.matchdict['group_id']
+    allTests = DBSession.query(TestGroupMembership).filter(TestGroupMembership.group_id == group_id)
+    for x in tests:   
+        allTests.filter(TestGroupMembership.test_id == x).delete()
+    DBSession.flush()
+    return dict(success=True)

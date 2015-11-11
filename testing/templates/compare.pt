@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="${request.locale_name}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Test262 test run viewer.">
+
+    <title>Test262 Job Viewer</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+     <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+  
+  <body>
+    <div style="background:#58BCFF !important" class="jumbotron">
+      <div class="container">
+        <h1>compare jobs</h1>
+        <p>${request.matchdict['job_id_source']} (source) against ${request.matchdict['job_id_dest']} (dest)</p>
+      </div>
+    </div>
+
+    <!-- NavBar -->
+    <div class="container">
+      <nav class="navbar navbar-default">
+        <div class="container-fluid">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          <div class="navbar-header">
+            <a class="navbar-brand" href="${request.route_url('view_home')}">Home</a>
+          </div>
+
+          <!-- Collect the nav links, forms, and other content for toggling -->
+          <div class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
+            </ul>
+          </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+      </nav>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-sm-9">          
+          <p>This page only displays differences between jobs. If there was no change in the test, that test will not appear.</p>
+        </div>
+        <div class="col-sm-3">
+          <button id="save-compare" class="btn btn-default">Save comparison (CSV)</button>      
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          <p></p>
+          <table id="compare-table" class="table">
+            <thead>
+              <tr>
+                <th>Test id</th>
+                <th>Source Run id</th>
+                <th>Dest Run id</th>
+                <th>Source Res</th>
+                <th>Dest Res</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core script. Bootstrap, Datatables, TableTools (ext)
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+    <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+     <script>
+      jQuery(document).ready(function($) {
+        $("#compare-table").DataTable( {
+          "processing": true,
+          "serverSide": true,
+          "ajax" : {
+            "url" : "${request.route_url('compare_table', job_id_source=request.matchdict['job_id_source'], job_id_dest=request.matchdict['job_id_dest'])}",
+            "type" : "GET"
+          },
+          "columns" : [
+            { 
+              "data" : "test_id",
+              "render" : function (data, type, row) {
+                return "<a href='" + row.DT_RowData.link + "'>" + data + "</a>";
+              }
+            },
+            {
+              "data" : "run_id",
+              "render" : function (data, type, row) {
+                return "<a href='" + row.DT_RowData.sourcelink + "'>" + data + "</a>";
+              }
+            },
+            {
+              "data" : "alt_id",
+              "render" : function (data, type, row) {
+                return "<a href='" + row.DT_RowData.destlink + "'>" + data + "</a>";
+              }
+            },
+            {
+              "data" : "result",
+              "orderable" : false
+            },
+            {
+              "data" : "alt_result",
+              "orderable" : false
+            }     ]
+        });
+
+        $("#save-compare").click(function () {
+          var value = $('.dataTables_filter input').val();
+          console.log(value);
+          window.open( 
+            "${request.route_path('compare_save', job_id_source=request.matchdict['job_id_source'], job_id_dest=request.matchdict['job_id_dest'])}" + "?search=" + value, '_blank');
+        });
+      });
+    </script>
+
+  </body>
+
+</html>
