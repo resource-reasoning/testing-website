@@ -4,7 +4,7 @@ from sqlalchemy.schema import MetaData
 from sqlalchemy.orm import backref, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base(metadata=MetaData(schema='cr1013'))
+Base = declarative_base(metadata=MetaData(schema='jsil'))
 
 class Job(Base):
     __tablename__ = 'test_jobs'

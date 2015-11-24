@@ -25,12 +25,12 @@ def upgrade():
     sa.Column('aborts', sa.Integer(), nullable=True),
     sa.Column('unknowns', sa.Integer(), nullable=True),
     sa.Column('timeouts', sa.Integer(), nullable=True),
-    sa.ForeignKeyConstraint(['job_id'], [u'cr1013.test_jobs.id'], name='test_job_stats_job_id_fkey'),
+    sa.ForeignKeyConstraint(['job_id'], [u'jsil.test_jobs.id'], name='test_job_stats_job_id_fkey'),
     sa.PrimaryKeyConstraint('id'),
-    schema='cr1013'
+    schema='jsil'
     )
     # Execute raw query to populate the stats table with existing data!
-    op.execute('''insert into cr1013.test_job_stats (job_id, passes, fails, aborts, unknowns, timeouts)
+    op.execute('''insert into jsil.test_job_stats (job_id, passes, fails, aborts, unknowns, timeouts)
                         select 
                           job_id, 
                           sum(case result::text when 'PASS' then 1 else 0 end) as total_pass,
@@ -38,8 +38,8 @@ def upgrade():
                           sum(case result::text when 'ABORT' then 1 else 0 end) as total_abort,
                           sum(case result::text when 'UNKNOWN' then 1 else 0 end) as total_unknown,
                           sum(case result::text when 'TIMEOUT' then 1 else 0 end) as total_timeout
-                        from cr1013.test_runs group by job_id order by job_id asc;''')
+                        from jsil.test_runs group by job_id order by job_id asc;''')
 
 
 def downgrade():
-    op.drop_table('test_job_stats', schema='cr1013')
+    op.drop_table('test_job_stats', schema='jsil')
