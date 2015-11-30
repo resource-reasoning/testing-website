@@ -55,25 +55,9 @@
         <div class="col-sm-7">
           <table class="table table-bordered">
             <tbody>
-              <tr>
-                <td>Passes</td>
-                <td>${runs_stats.passes}</td>
-              </tr>
-              <tr>
-                <td>Fails</td>
-                <td>${runs_stats.fails}</td>
-              </tr>
-              <tr>
-                <td>Aborts</td>
-                <td>${runs_stats.aborts}</td>
-              </tr>
-              <tr>
-                <td>Timeouts</td>
-                <td>${runs_stats.timeouts}</td>
-              </tr>
-              <tr>
-                <td>Unknowns</td>
-                <td>${runs_stats.unknowns}</td>
+              <tr tal:repeat="stat runs_stats">
+                <td>${stat[0]}</td>
+                <td>${stat[1]}</td>
               </tr>
             </tbody>
           </table>
@@ -117,7 +101,6 @@
     <!-- Chart.js files via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 
-
     <script>
     jQuery(document).ready(function($) {
 
@@ -145,43 +128,6 @@
       $("#submit-no").click(function () {
         window.document.location =  "${request.route_url('view_home')}" + 'compare/' + "${request.matchdict['job_id']}/" + $("#job-no").val();
       });
-
-      var ctx = $("#stats-pie").get(0).getContext("2d");
-      
-      var data = [
-        {
-            value: ${runs_stats.passes},
-            color:"#00B800",
-            highlight: "#00CC00",
-            label: "Passes"
-        },
-        {
-            value: ${runs_stats.fails},
-            color: "#CF0000",
-            highlight: "#E60000",
-            label: "Fails"
-        },
-        {
-            value: ${runs_stats.aborts},
-            color: "#E6B800",
-            highlight: "#FFCC00",
-            label: "Aborts"
-        },
-        {
-            value: ${runs_stats.timeouts},
-            color: "#E6B8E6",
-            highlight: "#FFCCFF",
-            label: "Timeouts"
-        },
-        {
-            value: ${runs_stats.unknowns},
-            color: "#808080",
-            highlight: "#A6A6A6",
-            label: "Unknown"
-        }
-      ]
-
-      var myPieChart = new Chart(ctx).Pie(data,{});
 
     });
     </script>

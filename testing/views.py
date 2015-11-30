@@ -60,7 +60,9 @@ def view_jobs(request):
 
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
-    runs_stats = DBSession.query(Stats).filter(Stats.job_id == request.matchdict['job_id']).first()
+    runs_stats = DBSession.query(Run.result, func.count(Run.result)) \
+                    .filter(Run.job_id == request.matchdict['job_id']) \
+                    .group_by(Run.result).all()
     return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'))
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
