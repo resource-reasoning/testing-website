@@ -73,7 +73,16 @@ def view_batch(request):
 def request_job_table(request):
     # Server side processing for DataTables plugin
 
-    query = DBSession.query(Run.id, Run.test_id, Run.result).filter(Run.job_id == request.matchdict['job_id'])
+    job = request.matchdict['job_id']
+    query = DBSession.query(Run.id, Run.test_id, Run.result).filter(Run.job_id == job)
+
+    if request.params['classifyFilter'] == "true":
+        class_subquery = DBSession.query(Run.id).join(TestRunClassification)
+        query = query.filter(~Run.id.in_(class_subquery))
+
+    resultFilter = request.params.getall('resultFilter[]')
+    if resultFilter:
+        query = query.filter(Run.result.in_(resultFilter))
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
@@ -266,8 +275,10 @@ def test_classifier(request):
     col = getattr(Run, str(classifier.column))
 
     matched_runs = DBSession.query(Run.id, Run.test_id, col) \
-                       .filter(Run.job_id == request.matchdict['job_id']) \
                        .filter(col.op('~')(classifier.pattern))
+
+    if request.params['job_id']:
+        matched_runs = matched_runs.filter(Run.job_id == request.params['job_id'])
 
     table = DataTable(request.GET, Run, matched_runs, ["id", "test_id", classifier.column])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))

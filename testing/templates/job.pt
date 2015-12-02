@@ -49,19 +49,27 @@
           <canvas id="stats-pie" width="200" height="200"></canvas>
         </div>
       </div>
-      <div class="row">
+      <div class="row form-group">
         <div class="col-sm-3">
-          <div class="form-group">
-            <input id="job-no" type="text" class="form-control" placeholder="Compare against another job">
-          </div>
+          <input id="job-no" type="text" class="form-control" placeholder="Compare against another job">
         </div>
         <div class="col-sm-9">
           <button id="submit-no" class="btn btn-default">Submit</button>
         </div>
       </div>
-    </div>
 
-    <div class="container">
+      <div class="row form-group" id="table-controls">
+        <div class="col-sm-3">
+          <input type="checkbox" id="classify-filter" /> <label for="classify-filter">Filter out classified
+            failures</label>
+        </div>
+        <div class="col-sm-6">
+          <input type="checkbox" id="chk-pass" value="PASS" /> <label for="chk-pass">PASS</label>
+          <input type="checkbox" id="chk-fail" value="FAIL" /> <label for="chk-fail">FAIL</label>
+          <input type="checkbox" id="chk-abort" value="ABORT" /> <label for="chk-abort">ABORT</label>
+          <input type="checkbox" id="chk-timeout" value="TIMEOUT" /> <label for="chk-timeout">TIMEOUT</label>
+      </div>
+
       <table id="job-table" class="table table-hover table-bordered">
         <thead>
           <tr>
@@ -69,7 +77,6 @@
             <th>Result</th>
           </tr>
         </thead>
-        
       </table>
     </div>
 
@@ -85,17 +92,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 
     <script>
+    var classifyFilter = false;
+    var resultFilter = [];
+    var table;
+
+    $('#table-controls').change(function() {
+      classifyFilter = $('#classify-filter')[0].checked;
+      resultFilter = ['#chk-pass', '#chk-fail', '#chk-abort', '#chk-timeout'].map(
+        function(el) {
+          var el = $(el)[0];
+          return el.checked ? el.value : undefined;
+        }).filter(function(val) {
+          return !(val === undefined);
+      });
+
+      table.draw();
+    });
     jQuery(document).ready(function($) {
 
-      var geturl = "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}";
-
-      var table = $("#job-table").DataTable( {
+      table = $("#job-table").DataTable( {
         "ordering": false,
         "processing": true,
         "serverSide": true,
         "ajax" : {
-          "url" : geturl,
-          "type" : "GET"
+          "url" : "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}",
+          "type" : "GET",
+          "data" : function(d) {
+            d.classifyFilter = classifyFilter;
+            d.resultFilter = resultFilter;
+          }
         },
         "columns" : [
           { 
