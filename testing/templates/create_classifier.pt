@@ -26,31 +26,32 @@
   <body>
     <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
-        <h1>/groups</h1>
-        <p>Recap of existing groups</p>
+        <h1>/classifier/create</h1>
+        <p>Create a new test classifier</p>
       </div>
     </div>
 
     <div metal:use-macro="load: menu.pt">
-      <li metal:fill-slot="submenu"><a href="${request.route_path('create_group')}">Create Group</a></li>
+      <li metal:fill-slot="submenu" class="active"><a href="${request.route_path('create_classifier')}">Create Classifier</a></li>
     </div>
 
+
     <div class="container">
-      <div class="row"> 
-        <table id="cases-table" class="table table-bordered">
-          <thead>
-            <tr>
-              <th>Group id</th>
-              <th>Group Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="case groups">
-              <td><a href="${request.route_url('view_group', group_id=case.id)}">${case.id}</a></td>
-              <td>${case.description}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="row">
+        <form action="${request.route_url('create_group')}" method="post">
+          <div class="form-group">
+            <label for="group_desc">Description</label>
+            <!-- <input type="text" class="form-control" id="Group Description" placeholder="Description"> -->
+            <textarea class="form-control" rows="2" name="group_desc"></textarea>
+            <label for="pattern">Pattern</label>
+            <textarea class="form-control" rows="2" name="pattern"></textarea>
+            <label for="field">Field</label>
+            <select name="field" >
+              <option tal:repeat="column columns" value="${column}">${column}</option>
+            </select>
+          </div>
+          <button type="submit" name="form.submitted" class="btn btn-default">Create</button>
+        </form>
       </div>
     </div>
 
@@ -62,11 +63,6 @@
     <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 
-    <script>
-      jQuery(document).ready(function($) {
-        $("#cases-table").DataTable();
-      });
-    </script>
 
   </body>
 

@@ -21,14 +21,14 @@ def main(global_config, **settings):
     config.add_route('view_jobs', '/jobs')
     config.add_route('view_job' , '/job/{job_id}')
     config.add_route('request_job_table', '/job/table/{job_id}')
-    
+
     config.add_route('view_compare', '/compare/{job_id_dest}/{job_id_source}')
     config.add_route('compare_table', '/compare/table/{job_id_dest}/{job_id_source}')
     config.add_route('compare_save', '/compare/save/{job_id_dest}/{job_id_source}')
-    
+
     config.add_route('view_test_run', '/test/{test_id}')
     config.add_route('view_test', '/tests/{test_id:.*}')
-    
+
     config.add_route('view_groups','/groups/')
     config.add_route('create_group', '/group/create')
     config.add_route('view_group_add', '/group/add/{group_id}')
@@ -36,5 +36,10 @@ def main(global_config, **settings):
     config.add_route('group_remove_test', '/group/removetest/{group_id}')
     config.add_route('request_group_tests', '/group/add/table/{group_id}')
     config.add_route('view_group', '/group/{group_id}')
+
+    config.add_route('list_classifiers', '/classifiers')
+    config.add_route('create_classifier', '/classifier/create')
+    config.add_route('view_classifier', '/classifier/{classifier_id}')
+    config.add_route('test_classifier', '/classifier/{classifier_id}/test/{job_id}')
     config.scan()
     return config.make_wsgi_app()

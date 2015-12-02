@@ -64,13 +64,6 @@ class TestCase(Base):
     id = Column(String, primary_key=True)
     negative = Column(Boolean)
 
-class FailGroup(Base):
-    __tablename__ = 'fail_groups'
-
-    id = Column(Integer, primary_key=True)
-    description = Column(Text)
-    reason = Column(Text)
-
 class TestGroup(Base):
     __tablename__ = 'test_groups'
 
@@ -81,19 +74,9 @@ class TestClassifier(Base):
     __tablename__ = 'test_classifiers'
 
     id = Column(Integer, primary_key=True)
-
-    group_id = Column(Integer, ForeignKey('test_groups.id', name='test_classifiers_group_id_fkey'))
-    group = relationship('TestGroup', backref=backref('testclassifiers', cascade='all, delete-orphan'))
-
-    class_field = Column(String, nullable=False)
-    class_operator = Column(String, nullable=False)
-    class_value = Column(String, nullable=False)
-
-class FailGroupMembership(Base):
-    __tablename__ = 'fail_group_memberships'
-
-    group_id = Column(Integer, ForeignKey('fail_groups.id', name='fail_group_memberships_group_id_fkey'), primary_key=True)
-    test_id = Column(String, ForeignKey('test_cases.id', name='fail_group_memberships_test_id_fkey'), primary_key=True)
+    description = Column(Text)
+    pattern = Column(Text)
+    column = Column(Text)
 
 class TestGroupMembership(Base):
     __tablename__ = 'test_group_memberships'
@@ -119,7 +102,7 @@ class Stats(Base):
     id = Column(Integer, primary_key=True)
 
     job_id   = Column(Integer, ForeignKey('test_jobs.id', name='test_job_stats_job_id_fkey'))
-    
+
     passes   = Column(Integer)
     fails    = Column(Integer)
     aborts   = Column(Integer)

@@ -17,6 +17,7 @@ from .models import (
     Batch,
     Run,
     TestCase,
+    TestClassifier,
     TestGroup,
     TestGroupMembership,
     Stats
@@ -144,7 +145,7 @@ def compare_save(request):
 
     # Recreate user search:
     search = request.params['search']
-    if (search != ''): 
+    if (search != ''):
         res = res.filter(Run.test_id.op('~')(search))
     res = res.all()
 
@@ -198,7 +199,7 @@ def request_group_tests(request):
     in_cases  = DBSession.query(TestGroupMembership.test_id).\
                 filter(TestGroupMembership.group_id == request.matchdict['group_id'])
     not_cases = DBSession.query(TestCase).filter(~TestCase.id.in_(in_cases))
-    
+
     table = DataTable(request.GET, TestCase, not_cases, ["id"])
     table.add_data(link=lambda o: request.route_url("view_test", test_id=o.id))
     table.searchable(lambda queryset, userinput: queryset.filter(TestCase.id.op('~')(userinput)))
@@ -208,7 +209,7 @@ def request_group_tests(request):
 def group_add_test(request):
     tests = request.params.getall('tests')
     group_id = request.matchdict['group_id']
-    for x in tests:   
+    for x in tests:
         membership = TestGroupMembership(test_id=x, group_id=group_id)
         DBSession.add(membership)
     DBSession.flush()
@@ -219,7 +220,48 @@ def group_remove_test(request):
     tests = request.params.getall('tests')
     group_id = request.matchdict['group_id']
     allTests = DBSession.query(TestGroupMembership).filter(TestGroupMembership.group_id == group_id)
-    for x in tests:   
+    for x in tests:
         allTests.filter(TestGroupMembership.test_id == x).delete()
     DBSession.flush()
     return dict(success=True)
+
+### Classifiers ###
+@view_config(route_name='list_classifiers', renderer='templates/list_classifiers.pt')
+def list_classifiers(request):
+    classifiers = DBSession.query(TestClassifier).all()
+    return dict(classifiers=classifiers)
+
+@view_config(route_name='create_classifier', renderer='templates/create_classifier.pt')
+def create_classifier(request):
+    if 'form.submitted' in request.params:
+        desc = request.params['classifier_desc']
+        classifier = TestClassifier(description=desc)
+        DBSession.add(classifier)
+        DBSession.flush()
+        classifier_id = classifier.id
+        return HTTPFound(location=request.route_url('view_classifier', classifier_id=classifier_id))
+    return dict(columns=Run.__table__.columns.keys(), classifier=None)
+
+@view_config(route_name='view_classifier', renderer='templates/view_classifier.pt')
+def view_classifier(request):
+    classifier = DBSession.query(TestClassifier) \
+                          .filter_by(id=request.matchdict['classifier_id']) \
+                          .one()
+
+    return dict(columns=Run.__table__.c.keys(), classifier=classifier, view=True)
+
+@view_config(route_name='test_classifier', request_method='GET', renderer='json')
+def test_classifier(request):
+    classifier = DBSession.query(TestClassifier) \
+                          .filter_by(id=request.matchdict['classifier_id']) \
+                          .first()
+
+    matched_runs = DBSession.query(Run) \
+                       .filter(Run.job_id == request.matchdict['job_id']) \
+                       .filter(getattr(Run, classifier.field).op('~')(classifier.filter))
+
+    table = DataTable(request.GET, Run, matched_runs, ["id", "test_id", classifier.field])
+    table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
+    table.searchable(lambda queryset, userinput: queryset.filter(Run.test_id.op('~')(userinput)))
+    return table.json()
+
