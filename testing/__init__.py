@@ -41,5 +41,6 @@ def main(global_config, **settings):
     config.add_route('create_classifier', '/classifier/create')
     config.add_route('view_classifier', '/classifier/{classifier_id}')
     config.add_route('test_classifier', '/classifier/{classifier_id}/test/{job_id}')
+    config.add_route('apply_classifier', '/classifier/{classifier_id}/apply')
     config.scan()
     return config.make_wsgi_app()

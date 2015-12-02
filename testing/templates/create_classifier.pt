@@ -38,11 +38,11 @@
 
     <div class="container">
       <div class="row">
-        <form action="${request.route_url('create_group')}" method="post">
+        <form action="${request.route_url('create_classifier')}" method="post">
           <div class="form-group">
             <label for="group_desc">Description</label>
             <!-- <input type="text" class="form-control" id="Group Description" placeholder="Description"> -->
-            <textarea class="form-control" rows="2" name="group_desc"></textarea>
+            <textarea class="form-control" rows="2" name="description"></textarea>
             <label for="pattern">Pattern</label>
             <textarea class="form-control" rows="2" name="pattern"></textarea>
             <label for="field">Field</label>

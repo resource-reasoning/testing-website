@@ -10,6 +10,8 @@ from pyramid.httpexceptions import (
 
 from sqlalchemy import func, text, cast, Text, or_, column, String
 from sqlalchemy.orm import aliased
+from sqlalchemy.sql import expression
+from zope.sqlalchemy import mark_changed
 
 from . import DBSession
 from .models import (
@@ -20,6 +22,7 @@ from .models import (
     TestClassifier,
     TestGroup,
     TestGroupMembership,
+    TestRunClassification,
     Stats
     )
 
@@ -234,8 +237,12 @@ def list_classifiers(request):
 @view_config(route_name='create_classifier', renderer='templates/create_classifier.pt')
 def create_classifier(request):
     if 'form.submitted' in request.params:
-        desc = request.params['classifier_desc']
-        classifier = TestClassifier(description=desc)
+        desc = request.params['description']
+        col = request.params['field']
+        pat = request.params['pattern']
+        print(col)
+        print(pat)
+        classifier = TestClassifier(description=desc, column=col, pattern=pat)
         DBSession.add(classifier)
         DBSession.flush()
         classifier_id = classifier.id
@@ -256,12 +263,35 @@ def test_classifier(request):
                           .filter_by(id=request.matchdict['classifier_id']) \
                           .first()
 
-    matched_runs = DBSession.query(Run) \
-                       .filter(Run.job_id == request.matchdict['job_id']) \
-                       .filter(getattr(Run, classifier.field).op('~')(classifier.filter))
+    col = getattr(Run, str(classifier.column))
 
-    table = DataTable(request.GET, Run, matched_runs, ["id", "test_id", classifier.field])
+    matched_runs = DBSession.query(Run.id, Run.test_id, col) \
+                       .filter(Run.job_id == request.matchdict['job_id']) \
+                       .filter(col.op('~')(classifier.pattern))
+
+    table = DataTable(request.GET, Run, matched_runs, ["id", "test_id", classifier.column])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
     table.searchable(lambda queryset, userinput: queryset.filter(Run.test_id.op('~')(userinput)))
     return table.json()
 
+@view_config(route_name='apply_classifier', request_method='POST')
+def apply_classifier(request):
+    session = DBSession()
+
+    job = request.params['job']
+    cid = request.matchdict['classifier_id']
+    classifier = session.query(TestClassifier).filter_by(id=cid).first()
+
+    col = getattr(Run, str(classifier.column))
+
+    matched_runs = session.query(cid, Run.id) \
+                       .filter(Run.job_id == job) \
+                       .filter(col.op('~')(classifier.pattern))
+
+    insert = expression.insert(TestRunClassification).from_select(
+        [TestRunClassification.classifier_id, TestRunClassification.run_id],
+        matched_runs)
+    session.execute(insert)
+    mark_changed(session)
+
+    return HTTPFound(location=request.route_url('view_classifier', classifier_id=cid))

@@ -87,7 +87,7 @@ class TestGroupMembership(Base):
     test_id = Column(String, ForeignKey('test_cases.id', name='test_group_memberships_test_id_fkey'), primary_key=True)
     testcase = relationship('TestCase')
 
-class TestRunMembership(Base):
+class TestRunClassification(Base):
     __tablename__ = 'test_run_classifications'
 
     classifier_id = Column(Integer, ForeignKey('test_classifiers.id', name='test_run_classifications_classifier_id_fkey'), primary_key=True)

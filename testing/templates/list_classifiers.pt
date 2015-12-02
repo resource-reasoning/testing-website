@@ -48,7 +48,7 @@
             <tr tal:repeat="c classifiers">
               <td><a href="${request.route_path('view_classifier', classifier_id=c.id)}">${c.id}</a></td>
               <td>${c.description}</td>
-              <td>${c.field}</td>
+              <td>${c.column}</td>
               <td>${c.pattern}</td>
             </tr>
           </thead>
