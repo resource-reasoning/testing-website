@@ -67,7 +67,9 @@ def view_batch(request):
     runs_stats = DBSession.query(Run.result, func.count(Run.result)) \
                     .filter(Run.job_id == request.matchdict['job_id']) \
                     .group_by(Run.result).all()
-    return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'))
+    groups = DBSession.query(TestGroup).all()
+    return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'),
+                groups=groups)
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
@@ -83,6 +85,11 @@ def request_job_table(request):
     resultFilter = request.params.getall('resultFilter[]')
     if resultFilter:
         query = query.filter(Run.result.in_(resultFilter))
+
+    groupFilter = request.params.getall('groupFilter[]')
+    if groupFilter:
+        query = query.join(TestGroupMembership, Run.test_id == TestGroupMembership.test_id) \
+                     .filter(TestGroupMembership.group_id.in_(groupFilter))
 
     table = DataTable(request.GET, Run, query, ["test_id", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
