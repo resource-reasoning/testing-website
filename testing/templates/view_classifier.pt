@@ -61,9 +61,10 @@
             <div class="col-sm-3">
               <input id="job" name="job" type="text" class="form-control" placeholder="Test for job" />
             </div>
-            <div class="col-sm-3">
+            <div class="col-sm-5">
               <button type="button" id="job-but" class="btn btn-default">Test Classifier</button>
-              <button class="btn btn-warning">Apply Classifier</button>
+              <button class="btn btn-warning" name="submit" value="apply">Apply Classifier</button>
+              <button class="btn btn-danger" name="submit" value="delete">Delete Classifier</button>
             </div>
           </form>
         </div>

@@ -1,8 +1,12 @@
 from pyramid.config import Configurator
+from pyramid.events import BeforeRender
+
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import scoped_session, sessionmaker
 from zope.sqlalchemy import ZopeTransactionExtension
+
 from .models import Base
+from . import helpers
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
@@ -13,6 +17,9 @@ def main(global_config, **settings):
     DBSession.configure(bind=engine)
     Base.metadata.bind = engine
     config = Configurator(settings=settings)
+
+    # Rendering
+    config.add_subscriber(add_renderer_globals, BeforeRender)
     config.include('pyramid_chameleon')
     config.add_static_view('static', 'static', cache_max_age=3600)
     config.add_renderer('csv', 'testing.renderers.CSVRenderer')
@@ -44,3 +51,6 @@ def main(global_config, **settings):
     config.add_route('apply_classifier', '/classifier/{classifier_id}/apply')
     config.scan()
     return config.make_wsgi_app()
+
+def add_renderer_globals(event):
+    event['h'] = helpers

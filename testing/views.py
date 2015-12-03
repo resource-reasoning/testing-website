@@ -76,7 +76,7 @@ def request_job_table(request):
     # Server side processing for DataTables plugin
 
     job = request.matchdict['job_id']
-    query = DBSession.query(Run.id, Run.test_id, Run.result).filter(Run.job_id == job)
+    query = DBSession.query(Run.id, Run.test_id, Run.stdout, Run.stderr, Run.result).filter(Run.job_id == job)
 
     if request.params['classifyFilter'] == "true":
         class_subquery = DBSession.query(Run.id).join(TestRunClassification)
@@ -91,7 +91,7 @@ def request_job_table(request):
         query = query.join(TestGroupMembership, Run.test_id == TestGroupMembership.test_id) \
                      .filter(TestGroupMembership.group_id.in_(groupFilter))
 
-    table = DataTable(request.GET, Run, query, ["test_id", "result"])
+    table = DataTable(request.GET, Run, query, ["test_id", "stdout", "stderr", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
     # Search for similarity in Results or Regex in test_id
     table.searchable(lambda queryset, userinput: queryset.filter(or_(cast(Run.result, Text).\
@@ -108,7 +108,13 @@ def view_test_run(request):
     run = DBSession.query(Run).filter(Run.id == request.matchdict['test_id']).first()
     groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
                 filter(TestGroupMembership.test_id == run.test_id).all()
-    return dict(run=run, groups=groups, redirect=request.route_url('view_test', test_id=run.test_id))
+
+    classifs = DBSession.query(TestClassifier.id, TestClassifier.description) \
+        .join(TestRunClassification, TestRunClassification.classifier_id == TestClassifier.id) \
+        .filter(TestRunClassification.run_id == run.id).all()
+
+    return dict(run=run, groups=groups, classifiers=classifs,
+                redirect=request.route_url('view_test', test_id=run.test_id))
 
 
 
@@ -294,22 +300,36 @@ def test_classifier(request):
 
 @view_config(route_name='apply_classifier', request_method='POST')
 def apply_classifier(request):
-    session = DBSession()
-
     job = request.params['job']
     cid = request.matchdict['classifier_id']
-    classifier = session.query(TestClassifier).filter_by(id=cid).first()
 
-    col = getattr(Run, str(classifier.column))
+    session = DBSession()
 
-    matched_runs = session.query(cid, Run.id) \
-                       .filter(Run.job_id == job) \
-                       .filter(col.op('~')(classifier.pattern))
+    if request.params['submit'] == 'apply':
 
-    insert = expression.insert(TestRunClassification).from_select(
-        [TestRunClassification.classifier_id, TestRunClassification.run_id],
-        matched_runs)
-    session.execute(insert)
+        classifier = session.query(TestClassifier).filter_by(id=cid).first()
+
+        col = getattr(Run, str(classifier.column))
+
+        matched_runs = session.query(cid, Run.id) \
+                        .filter(Run.job_id == job) \
+                        .filter(col.op('~')(classifier.pattern))
+
+        query = expression.insert(TestRunClassification).from_select(
+            [TestRunClassification.classifier_id, TestRunClassification.run_id],
+            matched_runs)
+
+        session.execute(query)
+
+    elif request.params['submit'] == 'delete':
+        subquery = session.query(TestRunClassification.run_id) \
+                       .join(Run).filter(Run.job_id == job)
+
+        session.query(TestRunClassification) \
+            .filter(TestRunClassification.classifier_id == cid) \
+            .filter(TestRunClassification.run_id.in_(subquery)) \
+            .delete(synchronize_session=False)
+
     mark_changed(session)
 
     return HTTPFound(location=request.route_url('view_classifier', classifier_id=cid))

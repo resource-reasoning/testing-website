@@ -63,11 +63,12 @@
           <input type="checkbox" id="classify-filter" /> <label for="classify-filter">Filter out classified
             failures</label>
         </div>
-        <div class="col-sm-4">
+        <div class="col-sm-5">
           <input type="checkbox" id="chk-pass" value="PASS" /> <label for="chk-pass">PASS</label>
           <input type="checkbox" id="chk-fail" value="FAIL" /> <label for="chk-fail">FAIL</label>
           <input type="checkbox" id="chk-abort" value="ABORT" /> <label for="chk-abort">ABORT</label>
           <input type="checkbox" id="chk-timeout" value="TIMEOUT" /> <label for="chk-timeout">TIMEOUT</label>
+          <input type="checkbox" id="chk-unknown" value="UNKNOWN" /> <label for="chk-unknown">UNKNOWN</label>
         </div>
         <div class="col-sm-3">
           <select id="select-group" multiple="multiple">
@@ -80,6 +81,8 @@
         <thead>
           <tr>
             <th>Test Case (Click to view run)</th>
+            <th>stdout</th>
+            <th>stderr</th>
             <th>Result</th>
           </tr>
         </thead>
@@ -109,7 +112,7 @@
 
     $('#table-controls').change(function() {
       classifyFilter = $('#classify-filter')[0].checked;
-      resultFilter = ['#chk-pass', '#chk-fail', '#chk-abort', '#chk-timeout'].map(
+      resultFilter = ['#chk-pass', '#chk-fail', '#chk-abort', '#chk-timeout', '#chk-unknown'].map(
         function(el) {
           var el = $(el)[0];
           return el.checked ? el.value : undefined;
@@ -126,7 +129,6 @@
     jQuery(document).ready(function($) {
 
       table = $("#job-table").DataTable( {
-        "ordering": false,
         "processing": true,
         "serverSide": true,
         "ajax" : {
@@ -145,6 +147,8 @@
               return "<a href='" + row.DT_RowData.link + "'>" + data + "</a>";
             }
           },
+          { "data" : "stdout" },
+          { "data" : "stderr" },
           { "data" : "result" }
         ]
       });
