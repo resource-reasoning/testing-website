@@ -64,12 +64,15 @@ def view_jobs(request):
 
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
+    job_id = request.matchdict['job_id']
+    job = DBSession.query(Job).filter(Job.id == job_id).one()
+
     runs_stats = DBSession.query(Run.result, func.count(Run.result)) \
-                    .filter(Run.job_id == request.matchdict['job_id']) \
+                    .filter(Run.job_id == job_id) \
                     .group_by(Run.result).all()
     groups = DBSession.query(TestGroup).all()
     return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'),
-                groups=groups)
+                groups=groups, job=job)
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
@@ -307,29 +310,39 @@ def apply_classifier(request):
 
     if request.params['submit'] == 'apply':
 
-        classifier = session.query(TestClassifier).filter_by(id=cid).first()
+        classifiers = session.query(TestClassifier)
+        if cid != "all":
+            classifiers = classifiers.filter_by(id=cid)
+        classifiers = classifiers.all()
 
-        col = getattr(Run, str(classifier.column))
+        for classifier in classifiers:
+            col = getattr(Run, str(classifier.column))
 
-        matched_runs = session.query(cid, Run.id) \
-                        .filter(Run.job_id == job) \
-                        .filter(col.op('~')(classifier.pattern))
+            matched_runs = session.query(str(classifier.id), Run.id) \
+                            .filter(Run.job_id == job) \
+                            .filter(col.op('~')(classifier.pattern))
 
-        query = expression.insert(TestRunClassification).from_select(
-            [TestRunClassification.classifier_id, TestRunClassification.run_id],
-            matched_runs)
+            query = expression.insert(TestRunClassification).from_select(
+                [TestRunClassification.classifier_id, TestRunClassification.run_id],
+                matched_runs)
 
-        session.execute(query)
+            session.execute(query)
 
     elif request.params['submit'] == 'delete':
         subquery = session.query(TestRunClassification.run_id) \
                        .join(Run).filter(Run.job_id == job)
 
-        session.query(TestRunClassification) \
-            .filter(TestRunClassification.classifier_id == cid) \
-            .filter(TestRunClassification.run_id.in_(subquery)) \
-            .delete(synchronize_session=False)
+        query = session.query(TestRunClassification) \
+            .filter(TestRunClassification.run_id.in_(subquery))
+
+        if cid != "all":
+            query = query.filter(TestRunClassification.classifier_id == cid)
+
+        query.delete(synchronize_session=False)
 
     mark_changed(session)
 
-    return HTTPFound(location=request.route_url('view_classifier', classifier_id=cid))
+    if cid == 'all':
+        return HTTPFound(location=request.route_url('list_classifiers'))
+    else:
+        return HTTPFound(location=request.route_url('view_classifier', classifier_id=cid))
