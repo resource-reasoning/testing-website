@@ -97,7 +97,7 @@ def request_job_table(request):
     groupExcludeFilter = request.params.getall('groupExcludeFilter[]')
     if groupExcludeFilter:
         query = query.join(TestGroupMembership, Run.test_id == TestGroupMembership.test_id) \
-                     .filter(~TestGroupMembership.group_id.in_(groupFilter))
+                     .filter(~TestGroupMembership.group_id.in_(groupExcludeFilter))
 
     table = DataTable(request.GET, Run, query, ["test_id", "stdout", "stderr", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
