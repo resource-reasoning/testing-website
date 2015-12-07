@@ -80,7 +80,14 @@
           <input type="checkbox" id="chk-unknown" value="UNKNOWN" /> <label for="chk-unknown">UNKNOWN</label>
         </div>
         <div class="col-sm-3">
+          <label for="select-group">Include groups:</label>
           <select id="select-group" multiple="multiple">
+            <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
+          </select>
+        </div>
+        <div class="col-sm-3">
+          <label for="exclude-group">Exclude groups:</label>
+          <select id="exclude-group" multiple="multiple">
             <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
           </select>
         </div>
@@ -113,6 +120,7 @@
     var classifyFilter = false;
     var resultFilter = [];
     var groupFilter = [];
+    var groupExcludeFilter = [];
     var table;
 
     function isDefined(val) {
@@ -133,6 +141,12 @@
         return opt.selected ? opt.value : undefined;
       }).filter(isDefined);
 
+      var exg = $('#exclude-group')[0];
+      exg.map = Array.prototype.map;
+      groupExcludeFilter = exg.map(function(opt) {
+        return opt.selected ? opt.value : undefined;
+      }).filter(isDefined);
+
       table.draw();
     });
     jQuery(document).ready(function($) {
@@ -147,6 +161,7 @@
             d.classifyFilter = classifyFilter;
             d.resultFilter = resultFilter;
             d.groupFilter = groupFilter;
+            d.groupExcludeFilter = groupExcludeFilter;
           }
         },
         "columns" : [

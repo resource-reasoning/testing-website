@@ -94,6 +94,11 @@ def request_job_table(request):
         query = query.join(TestGroupMembership, Run.test_id == TestGroupMembership.test_id) \
                      .filter(TestGroupMembership.group_id.in_(groupFilter))
 
+    groupExcludeFilter = request.params.getall('groupExcludeFilter[]')
+    if groupExcludeFilter:
+        query = query.join(TestGroupMembership, Run.test_id == TestGroupMembership.test_id) \
+                     .filter(~TestGroupMembership.group_id.in_(groupFilter))
+
     table = DataTable(request.GET, Run, query, ["test_id", "stdout", "stderr", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
     # Search for similarity in Results or Regex in test_id
