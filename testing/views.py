@@ -91,13 +91,15 @@ def request_job_table(request):
 
     groupFilter = request.params.getall('groupFilter[]')
     if groupFilter:
-        query = query.join(TestGroupMembership, Run.test_id == TestGroupMembership.test_id) \
-                     .filter(TestGroupMembership.group_id.in_(groupFilter))
+        group_subquery = DBSession.query(TestGroupMembership.test_id) \
+            .filter(TestGroupMembership.group_id.in_(groupFilter))
+        query = query.filter(Run.test_id.in_(group_subquery))
 
     groupExcludeFilter = request.params.getall('groupExcludeFilter[]')
     if groupExcludeFilter:
-        query = query.join(TestGroupMembership, Run.test_id == TestGroupMembership.test_id) \
-                     .filter(~TestGroupMembership.group_id.in_(groupExcludeFilter))
+        groupExc_subquery = DBSession.query(TestGroupMembership.test_id) \
+            .filter(TestGroupMembership.group_id.in_(groupExcludeFilter))
+        query = query.filter(~Run.test_id.in_(groupExc_subquery))
 
     table = DataTable(request.GET, Run, query, ["test_id", "stdout", "stderr", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))

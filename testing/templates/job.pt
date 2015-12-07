@@ -79,13 +79,13 @@
           <input type="checkbox" id="chk-timeout" value="TIMEOUT" /> <label for="chk-timeout">TIMEOUT</label>
           <input type="checkbox" id="chk-unknown" value="UNKNOWN" /> <label for="chk-unknown">UNKNOWN</label>
         </div>
-        <div class="col-sm-3">
+        <div class="col-sm-2">
           <label for="select-group">Include groups:</label>
           <select id="select-group" multiple="multiple">
             <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
           </select>
         </div>
-        <div class="col-sm-3">
+        <div class="col-sm-2">
           <label for="exclude-group">Exclude groups:</label>
           <select id="exclude-group" multiple="multiple">
             <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
