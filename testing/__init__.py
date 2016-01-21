@@ -6,7 +6,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 from zope.sqlalchemy import ZopeTransactionExtension
 
 from .models import Base
-from . import helpers
+from . import render_helpers
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 
@@ -53,4 +53,4 @@ def main(global_config, **settings):
     return config.make_wsgi_app()
 
 def add_renderer_globals(event):
-    event['h'] = helpers
+    event['h'] = render_helpers
