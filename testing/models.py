@@ -66,6 +66,20 @@ class TestCase(Base):
     nostrict = Column(Boolean)
     onlystrict = Column(Boolean)
 
+class ES6TestCase(Base):
+    __tablename__ = 'es6_testcases'
+
+    test_id = Column(String, primary_key=True)
+    part1 = Column(Text)
+    part2 = Column(Text)
+    part3 = Column(Text)
+    part4 = Column(Text)
+    part5 = Column(Text)
+    part6 = Column(Text)
+    negative = Column(Boolean)
+    nostrict = Column(Boolean)
+    onlystrict = Column(Boolean)
+
 class TestGroup(Base):
     __tablename__ = 'test_groups'
 

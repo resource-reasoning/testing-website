@@ -19,12 +19,14 @@ from .models import (
     Batch,
     Run,
     TestCase,
+    ES6TestCase,
     TestClassifier,
     TestGroup,
     TestGroupMembership,
     TestRunClassification,
     Stats
     )
+from .model_helpers import *
 
 
 
@@ -357,3 +359,16 @@ def apply_classifier(request):
         return HTTPFound(location=request.route_url('list_classifiers'))
     else:
         return HTTPFound(location=request.route_url('view_classifier', classifier_id=cid))
+
+@view_config(route_name='summarise_job_filter', renderer='templates/sum.pt')
+def summarise_job_filter(request):
+    count = func.count(ES6TestCase.test_id)
+    q = DBSession.query(count).having(count > 1)
+    q = rollup(q,
+               ES6TestCase.part1,
+               ES6TestCase.part2,
+               ES6TestCase.part3,
+               ES6TestCase.part4,
+               ES6TestCase.part5,
+               ES6TestCase.part6)
+    return dict(rows=q.all())
