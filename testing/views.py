@@ -9,7 +9,7 @@ from pyramid.httpexceptions import (
     )
 
 from sqlalchemy import func, text, cast, Text, or_, column, String
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, joinedload
 from sqlalchemy.sql import expression
 from zope.sqlalchemy import mark_changed
 
@@ -132,13 +132,17 @@ def view_test_run(request):
 
 @view_config(route_name='view_test', renderer='templates/testcase.pt')
 def view_test(request):
-    runs = DBSession.query(Run).filter(
-        Run.test_id == request.matchdict['test_id']).order_by(Run.id.desc()).all()
+    test_id = request.matchdict['test_id']
+    testcase = DBSession.query(TestCase).filter(TestCase.id == test_id) \
+                    .options(joinedload(TestCase.runs)) \
+                    .one()
+
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
-        Run.test_id == request.matchdict['test_id']).group_by(Run.result).all()
+        Run.test_id == test_id).group_by(Run.result).all()
+
     groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
-                filter(TestGroupMembership.test_id == request.matchdict['test_id']).all()
-    return dict(runs=runs, runs_stats=runs_stats, groups=groups, root_url=request.route_url('view_home'))
+                filter(TestGroupMembership.test_id == test_id).all()
+    return dict(testcase=testcase, runs_stats=runs_stats, groups=groups, root_url=request.route_url('view_home'))
 
 
 

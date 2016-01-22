@@ -1,7 +1,7 @@
 from sqlalchemy import (Boolean, Column, Enum, DateTime, ForeignKey, Integer,
                         Interval, SmallInteger, String, Text)
 from sqlalchemy.schema import MetaData
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import backref, deferred, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base(metadata=MetaData(schema='jsil'))
@@ -45,7 +45,7 @@ class Run(Base):
     id = Column(Integer, primary_key=True)
 
     test_id = Column(String, ForeignKey('test_cases.id', name='test_runs_test_id_fkey'))
-    testcase = relationship('TestCase')
+    testcase = relationship('TestCase', backref=backref('runs'))
 
     batch_id = Column(Integer, ForeignKey('test_batches.id', name='test_runs_batch_id_new_fkey'))
     batch = relationship('Batch', backref=backref('runs'))
@@ -54,8 +54,8 @@ class Run(Base):
 
     result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='jscert.result_text'))
     exit_code = Column(SmallInteger)
-    stdout = Column(Text)
-    stderr = Column(Text)
+    stdout = deferred(Column(Text))
+    stderr = deferred(Column(Text))
     duration = Column(Interval)
 
 class TestCase(Base):
@@ -63,6 +63,8 @@ class TestCase(Base):
 
     id = Column(String, primary_key=True)
     negative = Column(Boolean)
+    nostrict = Column(Boolean)
+    onlystrict = Column(Boolean)
 
 class TestGroup(Base):
     __tablename__ = 'test_groups'

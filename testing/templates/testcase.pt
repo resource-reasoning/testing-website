@@ -33,6 +33,9 @@
     
     <div class="container">
       <div class="row">
+        <div class="col-sm-3">
+        </div>
+
         <div class="col-sm-3">  
           <table class="table table-bordered">
             <tbody>
@@ -43,8 +46,7 @@
             </tbody>
           </table>
         </div>
-        <div class="col-sm-9">
-          <label for="group-info">Groups: (appears empty if testcase has no group information)</label>
+        <div class="col-sm-3" tal:condition="len(groups)">
           <table id="group-info" class="table table-bordered table-hover">
             <thead>
               <tr>
@@ -73,7 +75,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="run runs">
+          <tr tal:repeat="run testcase.runs">
             <td tal:content="run.batch.job_id">No Test Id</td>
             <td tal:content="run.result">No Result</td>
             <td><a href="${root_url}test/${run.id}">View Run</a></td>
