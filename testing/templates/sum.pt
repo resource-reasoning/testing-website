@@ -1,4 +1,7 @@
 <table border=1>
+  <tr>
+    <th tal:repeat="col cols">${col}</th>
+  </tr>
   <tr tal:repeat="row rows">
     <td tal:repeat="elem row">${elem}</td>
   </tr>

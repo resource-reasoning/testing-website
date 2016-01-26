@@ -1,7 +1,7 @@
 from sqlalchemy import (Boolean, Column, Enum, DateTime, ForeignKey, Integer,
                         Interval, SmallInteger, String, Text)
 from sqlalchemy.schema import MetaData
-from sqlalchemy.orm import backref, deferred, relationship
+from sqlalchemy.orm import backref, column_property, deferred, relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base(metadata=MetaData(schema='jsil'))
@@ -44,7 +44,7 @@ class Run(Base):
 
     id = Column(Integer, primary_key=True)
 
-    test_id = Column(String, ForeignKey('test_cases.id', name='test_runs_test_id_fkey'))
+    test_id = Column(String, ForeignKey('es6_testcases.test_id', name='test_runs_test_id_fkey'))
     testcase = relationship('TestCase', backref=backref('runs'))
 
     batch_id = Column(Integer, ForeignKey('test_batches.id', name='test_runs_batch_id_new_fkey'))
@@ -58,18 +58,19 @@ class Run(Base):
     stderr = deferred(Column(Text))
     duration = Column(Interval)
 
+#class TestCase(Base):
+#    __tablename__ = 'test_cases'
+#
+#    id = Column(String, primary_key=True)
+#    negative = Column(Boolean)
+#    nostrict = Column(Boolean)
+#    onlystrict = Column(Boolean)
+
 class TestCase(Base):
-    __tablename__ = 'test_cases'
-
-    id = Column(String, primary_key=True)
-    negative = Column(Boolean)
-    nostrict = Column(Boolean)
-    onlystrict = Column(Boolean)
-
-class ES6TestCase(Base):
     __tablename__ = 'es6_testcases'
 
     test_id = Column(String, primary_key=True)
+    id = column_property(test_id)
     part1 = Column(Text)
     part2 = Column(Text)
     part3 = Column(Text)
@@ -100,7 +101,7 @@ class TestGroupMembership(Base):
     group_id = Column(Integer, ForeignKey('test_groups.id', name='test_group_memberships_group_id_fkey'), primary_key=True)
     group = relationship('TestGroup', backref=backref('testgroupmemberships', cascade='all, delete-orphan'))
 
-    test_id = Column(String, ForeignKey('test_cases.id', name='test_group_memberships_test_id_fkey'), primary_key=True)
+    test_id = Column(String, ForeignKey('es6_testcases.test_id', name='test_group_memberships_test_id_fkey'), primary_key=True)
     testcase = relationship('TestCase')
 
 class TestRunClassification(Base):
@@ -110,7 +111,7 @@ class TestRunClassification(Base):
     classifier = relationship('TestClassifier', backref=backref('testrunclassifiers', cascade='all, delete-orphan'))
 
     run_id = Column(Integer, ForeignKey('test_runs.id', name='test_run_memberships_run_id_fkey'), primary_key=True)
-    run = relationship('Run')
+    run = relationship('Run', backref=backref('testrunclassifiers'))
 
 class Stats(Base):
     __tablename__ = 'test_job_stats'

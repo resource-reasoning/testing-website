@@ -19,7 +19,6 @@ from .models import (
     Batch,
     Run,
     TestCase,
-    ES6TestCase,
     TestClassifier,
     TestGroup,
     TestGroupMembership,
@@ -360,15 +359,70 @@ def apply_classifier(request):
     else:
         return HTTPFound(location=request.route_url('view_classifier', classifier_id=cid))
 
+@view_config(route_name='rollup_test', renderer='templates/sum.pt')
+def rollup_test(request):
+    rollup_cols = (TestCase.part1, TestCase.part2, TestCase.part3,
+                   TestCase.part4, TestCase.part5, TestCase.part6)
+    q = DBSession.query(TestCase.test_id, *rollup_cols)
+    q = rollup(DBSession, q, *rollup_cols)
+    columns = [c['name'] for c in q.column_descriptions]
+    return dict(cols=columns, rows=q.all())
+
 @view_config(route_name='summarise_job_filter', renderer='templates/sum.pt')
 def summarise_job_filter(request):
-    count = func.count(ES6TestCase.test_id)
-    q = DBSession.query(count).having(count > 1)
-    q = rollup(q,
-               ES6TestCase.part1,
-               ES6TestCase.part2,
-               ES6TestCase.part3,
-               ES6TestCase.part4,
-               ES6TestCase.part5,
-               ES6TestCase.part6)
-    return dict(rows=q.all())
+    selected_classifier_ids = []
+    selected_group_ids = []
+
+    rollup_cols = [TestCase.part1, TestCase.part2, TestCase.part3, TestCase.part4,
+                 TestCase.part5, TestCase.part6]
+
+    query = DBSession.query(TestCase.id, *rollup_cols) \
+            .join(Run) \
+            .filter(Run.job_id == 74) \
+            .outerjoin(TestGroupMembership)
+
+    # Group filter count columns
+    groups = DBSession.query(TestGroup.id, TestGroup.description) \
+                .all()
+#                      .filter(TestGroup.id.in_(selected_group_ids)) \
+
+    query = pivot_count(query,
+        [(TestGroupMembership.group_id == g.id, "G: "+g.description) for g in groups])
+
+    query = query.group_by(TestCase.id, *rollup_cols)
+    subquery = query.subquery()
+
+    query = DBSession.query(subquery) \
+        .join(Run).filter(Run.job_id == 74) \
+        .outerjoin(TestRunClassification)
+
+    # Classifier filter count columns
+    classifiers = DBSession \
+        .query(TestClassifier.id, TestClassifier.description) \
+        .all()
+        #.filter(TestClassifier.id.in_(selected_classifier_ids)) \
+
+    query = pivot_count(query,
+        [(TestRunClassification.classifier_id == c.id, "C: " + c.description)
+         for c in classifiers])
+
+    query = query.group_by(subquery)
+
+    subquery = query.subquery()
+    rollup_cols = [subquery.corresponding_column(c) for c in rollup_cols]
+
+    query = DBSession.query(*(c for c in subquery.c if not
+                              c.shares_lineage(TestCase.id))) \
+        .join(Run).filter(Run.job_id == 74)
+
+
+    # Generic count columns
+    query = pivot_count(query, [
+        (Run.result == 'PASS', 'Pass'),
+        (Run.result != 'PASS', 'Fail')
+    ]).group_by(subquery)
+
+    columns = (c['name'] for c in query.column_descriptions)
+    query = rollup(DBSession, query, *rollup_cols, f=func.sum)
+
+    return dict(cols=columns, rows=query.all())

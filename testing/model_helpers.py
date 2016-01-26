@@ -23,22 +23,19 @@ For columns to group by a,b,c,d and values in x, generate the query:
 
 
 def rollup(session, query, *cols, f=func.count):
-    """
-    cols should not be present in the original query
-    """
-
     def label(col, n):
         return col.label("rollup_%s" % n)
 
-    original_cols = [c['expr'] for c in query.column_descriptions]
-    labels = ["rollup_%s" % (n+1) for n in range(0, len(cols))]
+    original_cols = query.selectable.columns
+    labels = tuple("rollup_%s" % (n+1) for n in range(0, len(cols)))
 
-    cte = query.add_columns(*cols).cte()
+    cte = query.cte()
 
     cte_cols = [cte.corresponding_column(c).label(l)
                     for (c, l) in zip(cols, labels)]
-    agg_cols = [f(cte.corresponding_column(c)) for c in original_cols]
-    filters = [c.isnot(None) for c in cte_cols]
+    agg_cols = tuple(f(cte.corresponding_column(c)) for c in original_cols
+                    if not shares_lineages(c, cols))
+    filters = tuple(c.isnot(None) for c in cte_cols)
 
     subqueries = []
 
@@ -54,3 +51,25 @@ def rollup(session, query, *cols, f=func.count):
                              .group_by(*labels))
 
     return subqueries[0].union_all(*subqueries[1:]).order_by(*labels)
+
+"""A column_expression is a tuple of a an expression to query for a
+count function and a label for that column.
+Grouping is left to the caller."""
+def pivot_count(query, column_expressions):
+    columns = [func.count(
+        case([(expr, 1)])
+    )
+        .label(l)
+                            for (expr, l) in column_expressions]
+    return query.add_columns(*columns)
+
+"""Returns True if col shares a lineage with any column in columns"""
+def shares_lineages(col, columns):
+    return any(col.shares_lineage(col2) for col2 in columns)
+
+"""Returns a query that projects all columns of the subquery *except* for the
+given columns."""
+def remove_columns(query, *columns):
+    select_cols = (col for col in query.selectable.c
+                        if not shares_lineages(col, columns))
+    return query.from_self(*select_cols)
