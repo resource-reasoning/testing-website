@@ -1,5 +1,5 @@
 from sqlalchemy.orm import aliased
-from sqlalchemy.sql.expression import literal_column
+from sqlalchemy.sql.expression import case, func, literal_column
 
 
 
@@ -22,7 +22,7 @@ For columns to group by a,b,c,d and values in x, generate the query:
 """
 
 
-def rollup(query, *cols):
+def rollup(session, query, *cols, f=func.count):
     """
     cols should not be present in the original query
     """
@@ -30,18 +30,27 @@ def rollup(query, *cols):
     def label(col, n):
         return col.label("rollup_%s" % n)
 
+    original_cols = [c['expr'] for c in query.column_descriptions]
     labels = ["rollup_%s" % (n+1) for n in range(0, len(cols))]
-    select_cols = [col.label(label) for (col, label) in zip(cols, labels)]
-    filters = [col.isnot(None) for col in cols]
+
+    cte = query.add_columns(*cols).cte()
+
+    cte_cols = [cte.corresponding_column(c).label(l)
+                    for (c, l) in zip(cols, labels)]
+    agg_cols = [f(cte.corresponding_column(c)) for c in original_cols]
+    filters = [c.isnot(None) for c in cte_cols]
+
     subqueries = []
 
     for x in reversed(range(0, len(cols))):
-        subqueries.append(query.add_columns(*select_cols)
-                               .filter(*filters[0:x+1])
-                               .group_by(*labels))
-        select_cols[x] = literal_column('NULL').label(labels[x])
+        subqueries.append(session.query(*cte_cols)
+                                 .add_columns(*agg_cols)
+                                 .filter(*filters[0:x+1])
+                                 .group_by(*labels))
+        cte_cols[x] = literal_column('NULL').label(labels[x])
 
-    subqueries.append(query.add_columns(*select_cols)
-                           .group_by(*labels))
+    subqueries.append(session.query(*cte_cols)
+                             .add_columns(*agg_cols)
+                             .group_by(*labels))
 
     return subqueries[0].union_all(*subqueries[1:]).order_by(*labels)
