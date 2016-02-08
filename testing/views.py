@@ -27,6 +27,11 @@ from .models import (
     )
 from .model_helpers import *
 
+import functools
+import operator
+
+import logging
+log = logging.getLogger(__name__)
 
 
 #### Home page and redirection ###
@@ -376,53 +381,56 @@ def summarise_job_filter(request):
     rollup_cols = [TestCase.part1, TestCase.part2, TestCase.part3, TestCase.part4,
                  TestCase.part5, TestCase.part6]
 
-    query = DBSession.query(TestCase.id, *rollup_cols) \
+    # Pivot table for group membership
+    groups = DBSession.query(TestGroup.id, TestGroup.description).all()
+
+    test_case_id = TestCase.id.label('test_case_id')
+    query = DBSession.query(test_case_id, *rollup_cols) \
             .join(Run) \
             .filter(Run.job_id == 74) \
             .outerjoin(TestGroupMembership)
 
-    # Group filter count columns
-    groups = DBSession.query(TestGroup.id, TestGroup.description) \
-                .all()
-#                      .filter(TestGroup.id.in_(selected_group_ids)) \
-
-    query = pivot_count(query,
+    query = pivot(query,
         [(TestGroupMembership.group_id == g.id, "G: "+g.description) for g in groups])
 
-    query = query.group_by(TestCase.id, *rollup_cols)
+    # Stick it into a subquery -- if we just use multiple outer left joins,
+    # we get a cross product join between groups and classifications
+    # (since the grouping is applied late), work out ways to improve on this
     subquery = query.subquery()
 
+    # Pivot table for test classifications
+    classifiers = DBSession.query(TestClassifier.id, TestClassifier.description).all()
     query = DBSession.query(subquery) \
         .join(Run).filter(Run.job_id == 74) \
         .outerjoin(TestRunClassification)
 
-    # Classifier filter count columns
-    classifiers = DBSession \
-        .query(TestClassifier.id, TestClassifier.description) \
-        .all()
-        #.filter(TestClassifier.id.in_(selected_classifier_ids)) \
-
-    query = pivot_count(query,
+    query = pivot(query,
         [(TestRunClassification.classifier_id == c.id, "C: " + c.description)
          for c in classifiers])
 
-    query = query.group_by(subquery)
-
     subquery = query.subquery()
-    rollup_cols = [subquery.corresponding_column(c) for c in rollup_cols]
 
-    query = DBSession.query(*(c for c in subquery.c if not
-                              c.shares_lineage(TestCase.id))) \
+    # Drop off TestCase.id for grouping
+    desired_cols = tuple(c for c in subquery.c if not c.shares_lineage(TestCase.id))
+    query = DBSession.query(subquery) \
         .join(Run).filter(Run.job_id == 74)
 
-
     # Generic count columns
-    query = pivot_count(query, [
-        (Run.result == 'PASS', 'Pass'),
-        (Run.result != 'PASS', 'Fail')
-    ]).group_by(subquery)
+    pass_col = Run.result == 'PASS', 'Pass'
+    fail_col = Run.result != 'PASS', 'Fail'
+    query = pivot(query, (pass_col, fail_col))\
+        .order_by(desired_cols[0])
+
+    # Some maths
+    #query = query.add_columns(
+    #    functools.reduce(operator.add, )
+    #)
+
+    # Fetch out the new rollup column aliases for the rollup operation
+    rollup_cols = tuple(subquery.corresponding_column(c) for c in rollup_cols)
+    query = rollup(DBSession, query, rollup_cols, f=func.sum,
+                   mask_cols=(test_case_id,))
 
     columns = (c['name'] for c in query.column_descriptions)
-    query = rollup(DBSession, query, *rollup_cols, f=func.sum)
 
     return dict(cols=columns, rows=query.all())
