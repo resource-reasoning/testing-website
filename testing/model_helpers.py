@@ -66,13 +66,16 @@ def rollup(session, query, cols, f=func.count, mask_cols=()):
 
     return subqueries[0].union_all(*subqueries[1:]).order_by(*labels)
 
-"""A column_expression is a tuple of a an expression to query for a
-count function and a label for that column.
+"""Produce a pivot query from a set of expressions to pivot on.
+SIDE-EFFECTS: Updates column_expressions with their final forms.
+Associates each with a label in the query, as passed in column_labels.
 Grouping is left to the caller."""
-def pivot(query, column_expressions):
+def pivot(query, column_expressions, column_labels):
     query = query.group_by(query.statement)
-    columns = (func.count(case([(expr, 1)])).label(l)
-                  for (expr, l) in column_expressions)
+    columns = []
+    for i in range(0, len(column_expressions)):
+        column_expressions[i] = func.count(case([(column_expressions[i], 1)]))
+        columns.append(column_expressions[i].label(column_labels[i]))
     return query.add_columns(*columns)
 
 """Returns True if col shares a lineage with any column in columns"""

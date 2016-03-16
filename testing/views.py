@@ -366,8 +366,14 @@ def apply_classifier(request):
 
 @view_config(route_name='rollup_test', renderer='templates/sum.pt')
 def rollup_test(request):
-    rollup_cols = (TestCase.part1, TestCase.part2, TestCase.part3,
-                   TestCase.part4, TestCase.part5, TestCase.part6)
+    ignored_runs = DBSession.query(TestGroupMembership.test_id) \
+        .filter(TestGroupMembership.group_id.between(6,8)) #16))
+    test_runs = DBSession.query(Run.id, Run.test_id, Run.result) \
+        .filter(Run.job_id == 74) \
+        .filter(Run.test_id.notin_(ignored_runs)) \
+        .cte()
+
+    rollup_cols = [TestCase.part1, TestCase.part2]
     q = DBSession.query(TestCase.test_id, *rollup_cols)
     q = rollup(DBSession, q, *rollup_cols)
     columns = [c['name'] for c in q.column_descriptions]
@@ -375,23 +381,31 @@ def rollup_test(request):
 
 @view_config(route_name='summarise_job_filter', renderer='templates/sum.pt')
 def summarise_job_filter(request):
-    selected_classifier_ids = []
-    selected_group_ids = []
+    ignored_runs = DBSession.query(TestGroupMembership.test_id) \
+        .filter(TestGroupMembership.group_id.between(6,8)) #16))
+    test_runs = DBSession.query(Run.id, Run.test_id, Run.result) \
+        .filter(Run.job_id == 74) \
+        .filter(Run.test_id.notin_(ignored_runs)) \
+        .cte()
 
-    rollup_cols = [TestCase.part1, TestCase.part2, TestCase.part3, TestCase.part4,
-                 TestCase.part5, TestCase.part6]
+    rollup_cols = [TestCase.part1, TestCase.part2] # , TestCase.part3, TestCase.part4,
+                 #TestCase.part5, TestCase.part6]
 
     # Pivot table for group membership
-    groups = DBSession.query(TestGroup.id, TestGroup.description).all()
+    groups = DBSession.query(TestGroup.id, TestGroup.description) \
+        .filter(TestGroup.id.between(9,21)).all()
 
     test_case_id = TestCase.id.label('test_case_id')
     query = DBSession.query(test_case_id, *rollup_cols) \
-            .join(Run) \
-            .filter(Run.job_id == 74) \
+            .join(test_runs, test_runs.c.test_id == test_case_id) \
             .outerjoin(TestGroupMembership)
 
-    query = pivot(query,
-        [(TestGroupMembership.group_id == g.id, "G: "+g.description) for g in groups])
+    pivot_exps = [TestGroupMembership.group_id == g.id for g in groups]
+    pivot_labels = tuple("G: "+g.description for g in groups)
+    query = pivot(query, pivot_exps, pivot_labels)
+
+    sum_g_column = functools.reduce(operator.add, pivot_exps).label("Sum G")
+    query = query.add_columns(sum_g_column)
 
     # Stick it into a subquery -- if we just use multiple outer left joins,
     # we get a cross product join between groups and classifications
@@ -401,30 +415,35 @@ def summarise_job_filter(request):
     # Pivot table for test classifications
     classifiers = DBSession.query(TestClassifier.id, TestClassifier.description).all()
     query = DBSession.query(subquery) \
-        .join(Run).filter(Run.job_id == 74) \
-        .outerjoin(TestRunClassification)
+        .join(test_runs, test_runs.c.test_id == subquery.c.test_case_id) \
+        .outerjoin(TestRunClassification, test_runs.c.id == TestRunClassification.run_id)
 
-    query = pivot(query,
-        [(TestRunClassification.classifier_id == c.id, "C: " + c.description)
-         for c in classifiers])
+    pivot_exps = [TestRunClassification.classifier_id == c.id for c in classifiers]
+    pivot_labels = tuple("C: " + c.description for c in classifiers)
+    query = pivot(query, pivot_exps, pivot_labels)
+
+    sum_c_column = functools.reduce(operator.add, pivot_exps).label("Sum C")
+    query = query.add_columns(sum_c_column)
 
     subquery = query.subquery()
 
     # Drop off TestCase.id for grouping
-    desired_cols = tuple(c for c in subquery.c if not c.shares_lineage(TestCase.id))
     query = DBSession.query(subquery) \
-        .join(Run).filter(Run.job_id == 74)
+        .join(test_runs, test_runs.c.test_id == subquery.c.test_case_id)
+
+    sum_g_column = subquery.corresponding_column(sum_g_column)
+    sum_c_column = subquery.corresponding_column(sum_c_column)
+
+    pass_col = test_runs.c.result == 'PASS'
+    fail_col = ~pass_col
+    filtered_exp = (sum_g_column + sum_c_column) > 0
+    pass_filtered_col = pass_col & filtered_exp
+    fail_filtered_col = fail_col & ~filtered_exp
 
     # Generic count columns
-    pass_col = Run.result == 'PASS', 'Pass'
-    fail_col = Run.result != 'PASS', 'Fail'
-    query = pivot(query, (pass_col, fail_col))\
-        .order_by(desired_cols[0])
-
-    # Some maths
-    #query = query.add_columns(
-    #    functools.reduce(operator.add, )
-    #)
+    query = pivot(query,
+                  [pass_col, fail_col, filtered_exp, pass_filtered_col, fail_filtered_col],
+                  ["Pass", "Fail", "filtered", "Pass & Filtered", "Fail & ~Filtered"])
 
     # Fetch out the new rollup column aliases for the rollup operation
     rollup_cols = tuple(subquery.corresponding_column(c) for c in rollup_cols)
