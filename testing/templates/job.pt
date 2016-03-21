@@ -134,7 +134,7 @@
           return !(val === undefined);
       }
 
-    $('#table-controls').change(function() {
+    function applyFilters() {
       resultFilter = ['#chk-pass', '#chk-fail', '#chk-abort', '#chk-timeout', '#chk-unknown'].map(
         function(el) {
           var el = $(el)[0];
@@ -153,7 +153,8 @@
       );
 
       table.draw();
-    });
+    }
+
     jQuery(document).ready(function($) {
 
       table = $("#job-table").DataTable( {
@@ -184,6 +185,8 @@
         window.document.location =  "${request.route_url('view_home')}" + 'compare/' + "${request.matchdict['job_id']}/" + $("#job-no").val();
       });
 
+      $('#table-controls').change(applyFilters);
+      applyFilters();
     });
     </script>
 
