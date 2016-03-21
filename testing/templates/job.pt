@@ -68,27 +68,35 @@
       </div>
 
       <div class="row form-group" id="table-controls">
+        <div class="col-sm-2 checkbox">
+          <div><label><input type="checkbox" id="chk-pass" value="PASS" />PASS</label></div>
+          <div><label><input type="checkbox" id="chk-fail" value="FAIL" />FAIL</label></div>
+          <div><label><input type="checkbox" id="chk-abort" value="ABORT" />ABORT</label></div>
+          <div><label><input type="checkbox" id="chk-timeout" value="TIMEOUT" />TIMEOUT</label></div>
+          <div><label><input type="checkbox" id="chk-unknown" value="UNKNOWN" />UNKNOWN</label></div>
+        </div>
         <div class="col-sm-3">
-          <input type="checkbox" id="classify-filter" /> <label for="classify-filter">Filter out classified
-            failures</label>
-        </div>
-        <div class="col-sm-5">
-          <input type="checkbox" id="chk-pass" value="PASS" /> <label for="chk-pass">PASS</label>
-          <input type="checkbox" id="chk-fail" value="FAIL" /> <label for="chk-fail">FAIL</label>
-          <input type="checkbox" id="chk-abort" value="ABORT" /> <label for="chk-abort">ABORT</label>
-          <input type="checkbox" id="chk-timeout" value="TIMEOUT" /> <label for="chk-timeout">TIMEOUT</label>
-          <input type="checkbox" id="chk-unknown" value="UNKNOWN" /> <label for="chk-unknown">UNKNOWN</label>
-        </div>
-        <div class="col-sm-2">
           <label for="select-group">Include groups:</label>
-          <select id="select-group" multiple="multiple">
+          <select class="form-control" id="select-group" multiple="multiple">
+            <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
+          </select>
+        </div>
+        <div class="col-sm-3">
+          <label for="exclude-group">Exclude groups:</label>
+          <select class="form-control" id="exclude-group" multiple="multiple">
             <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
           </select>
         </div>
         <div class="col-sm-2">
-          <label for="exclude-group">Exclude groups:</label>
-          <select id="exclude-group" multiple="multiple">
-            <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
+          <label for="select-classifier">Include classifiers:</label>
+          <select class="form-control" id="select-classifier" multiple="multiple">
+            <option tal:repeat="classifier classifiers" value="${classifier.id}">${classifier.description}</option>
+          </select>
+        </div>
+        <div class="col-sm-2">
+          <label for="exclude-classifier">Exclude classifiers:</label>
+          <select class="form-control" id="exclude-classifier" multiple="multiple">
+            <option tal:repeat="classifier classifiers" value="${classifier.id}">${classifier.description}</option>
           </select>
         </div>
       </div>
@@ -117,10 +125,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 
     <script>
-    var classifyFilter = false;
     var resultFilter = [];
-    var groupFilter = [];
-    var groupExcludeFilter = [];
+    var selectFilters = {};
+
     var table;
 
     function isDefined(val) {
@@ -128,24 +135,22 @@
       }
 
     $('#table-controls').change(function() {
-      classifyFilter = $('#classify-filter')[0].checked;
       resultFilter = ['#chk-pass', '#chk-fail', '#chk-abort', '#chk-timeout', '#chk-unknown'].map(
         function(el) {
           var el = $(el)[0];
           return el.checked ? el.value : undefined;
         }).filter(isDefined);
 
-      var selg = $('#select-group')[0];
-      selg.map = Array.prototype.map;
-      groupFilter = selg.map(function(opt) {
-        return opt.selected ? opt.value : undefined;
-      }).filter(isDefined);
-
-      var exg = $('#exclude-group')[0];
-      exg.map = Array.prototype.map;
-      groupExcludeFilter = exg.map(function(opt) {
-        return opt.selected ? opt.value : undefined;
-      }).filter(isDefined);
+      ['select-group', 'exclude-group', 'select-classifier', 'exclude-classifier'].forEach(
+        function(id) {
+          selectFilters[id] = Array.prototype.map.call(
+            $('#'+id)[0],
+            function(opt) {
+              return opt.selected ? opt.value : undefined;
+            }
+          ).filter(isDefined);
+        }
+      );
 
       table.draw();
     });
@@ -158,10 +163,8 @@
           "url" : "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}",
           "type" : "GET",
           "data" : function(d) {
-            d.classifyFilter = classifyFilter;
+            Object.assign(d, selectFilters);
             d.resultFilter = resultFilter;
-            d.groupFilter = groupFilter;
-            d.groupExcludeFilter = groupExcludeFilter;
           }
         },
         "columns" : [

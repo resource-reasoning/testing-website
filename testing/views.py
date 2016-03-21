@@ -77,8 +77,9 @@ def view_batch(request):
                     .filter(Run.job_id == job_id) \
                     .group_by(Run.result).all()
     groups = DBSession.query(TestGroup).all()
+    classifiers = DBSession.query(TestClassifier).all()
     return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'),
-                groups=groups, job=job)
+                groups=groups, classifiers=classifiers, job=job)
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
@@ -87,25 +88,35 @@ def request_job_table(request):
     job = request.matchdict['job_id']
     query = DBSession.query(Run.id, Run.test_id, Run.stdout, Run.stderr, Run.result).filter(Run.job_id == job)
 
-    if request.params['classifyFilter'] == "true":
-        class_subquery = DBSession.query(Run.id).join(TestRunClassification)
-        query = query.filter(~Run.id.in_(class_subquery))
-
     resultFilter = request.params.getall('resultFilter[]')
     if resultFilter:
         query = query.filter(Run.result.in_(resultFilter))
 
-    groupFilter = request.params.getall('groupFilter[]')
+    groupFilter = request.params.getall('select-group[]')
     if groupFilter:
         group_subquery = DBSession.query(TestGroupMembership.test_id) \
             .filter(TestGroupMembership.group_id.in_(groupFilter))
         query = query.filter(Run.test_id.in_(group_subquery))
 
-    groupExcludeFilter = request.params.getall('groupExcludeFilter[]')
+    groupExcludeFilter = request.params.getall('exclude-group[]')
     if groupExcludeFilter:
         groupExc_subquery = DBSession.query(TestGroupMembership.test_id) \
             .filter(TestGroupMembership.group_id.in_(groupExcludeFilter))
         query = query.filter(~Run.test_id.in_(groupExc_subquery))
+
+    classifierFilter = request.params.getall('select-classifier[]')
+    if classifierFilter:
+        subquery = DBSession.query(Run.id).join(TestRunClassification) \
+            .filter(Run.job_id == job) \
+            .filter(TestRunClassification.classifier_id.in_(classifierFilter))
+        query = query.filter(Run.id.in_(subquery))
+
+    classifierFilter = request.params.getall('exclude-classifier[]')
+    if classifierFilter:
+        subquery = DBSession.query(Run.id).join(TestRunClassification) \
+            .filter(Run.job_id == job) \
+            .filter(TestRunClassification.classifier_id.in_(classifierFilter))
+        query = query.filter(~Run.id.in_(subquery))
 
     table = DataTable(request.GET, Run, query, ["test_id", "stdout", "stderr", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
