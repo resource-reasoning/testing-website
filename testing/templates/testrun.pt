@@ -36,10 +36,11 @@
           <label for="run-info">Run information:</label>
           <table id="run-info" class="table table-bordered">
             <tbody>
-              <tr><td>Job</td><td>${run.batch.job_id}</td></tr>
+              <tr><td>Job</td><td>${run.job_id}</td></tr>
               <tr><td>Result</td><td>${run.result}</td></tr>
               <tr><td>Exit Code</td><td>${run.exit_code}</td></tr>
               <tr><td>Duration</td><td>${run.duration}</td></tr>
+              <tr><td>Condor</td><td>${run.batch.condor_proc} ${run.batch.osnodename} (${run.batch.hardware})</td></tr>
               <tr>
                 <td>Test Case</td>
                 <td tal:define="os import: os">

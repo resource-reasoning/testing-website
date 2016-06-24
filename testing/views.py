@@ -132,7 +132,8 @@ def request_job_table(request):
 
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):
-    run = DBSession.query(Run).filter(Run.id == request.matchdict['test_id']).first()
+    run = DBSession.query(Run).join(Batch).\
+                filter(Run.id == request.matchdict['test_id']).first()
     groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
                 filter(TestGroupMembership.test_id == run.test_id).all()
 
