@@ -23,7 +23,7 @@
     <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
         <h1>/test/${run.id}</h1>
-        <p>recap of run of <i><a href="${h.test262_link(run.test_id)}">${run.test_id}</a></i> in job ${run.batch.job_id}</p>
+        <p>recap of run of <i><a href="${h.test262_link(run.test_id, run.job.tests_version)}">${run.test_id}</a></i> in job ${run.batch.job_id}</p>
       </div>
     </div>
 

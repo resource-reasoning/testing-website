@@ -16,6 +16,7 @@ class Job(Base):
     impl_version = Column(String)
     create_time = Column(DateTime)
     repo_version = Column(String)
+    tests_version = Column(String)
     username = Column(String)
     condor_cluster = Column(SmallInteger)
     condor_scheduler = Column(String)
@@ -51,8 +52,9 @@ class Run(Base):
     batch = relationship('Batch', backref=backref('runs'))
 
     job_id = Column(Integer, ForeignKey('test_jobs.id', name='test_runs_job_id_fkey'))
+    job = relationship('Job', backref=backref('runs'))
 
-    result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='jscert.result_text'))
+    result = Column(Enum('PASS', 'FAIL', 'ABORT', 'UNKNOWN', 'TIMEOUT', name='result_text'))
     exit_code = Column(SmallInteger)
     stdout = deferred(Column(Text))
     stderr = deferred(Column(Text))

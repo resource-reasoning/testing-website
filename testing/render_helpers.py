@@ -1,9 +1,9 @@
 # Helper functions for rendering engines
-def test262_link(path):
+def test262_link(path, rev=None):
     (_, partitioned, subpath) = path.rpartition('test262/')
-    if partitioned:
-        base_url = "https://github.com/tc39/test262/tree/es5-tests/"
-    else:
+    if not partitioned:
         (_, _, subpath) = path.rpartition('test262-es6/')
-        base_url = "https://github.com/tc39/test262/tree/master/"
-    return base_url + subpath
+
+    rev = rev or ('es5-tests' if ('suite' in subpath) else 'master')
+
+    return "https://github.com/tc39/test262/tree/%s/%s" % (rev, subpath)
