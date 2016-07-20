@@ -15,8 +15,7 @@ pyramid.includes =
     pyramid_debugtoolbar
     pyramid_tm
 
-#sqlalchemy.url = sqlite:///%(here)s/testing.sqlite
-sqlalchemy.url = postgresql://user:pass@db.doc.ic.ac.uk:5432/rr_u
+sqlalchemy.url = %(database_uri)s
 
 # By default, the toolbar only appears for clients from IP addresses
 # '127.0.0.1' and '::1'.
@@ -30,6 +29,10 @@ sqlalchemy.url = postgresql://user:pass@db.doc.ic.ac.uk:5432/rr_u
 use = egg:waitress#main
 host = 0.0.0.0
 port = 6543
+
+###
+# Database migration configuration location
+###
 
 [alembic]
 script_location = testing/alembic

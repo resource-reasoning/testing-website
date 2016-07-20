@@ -58,3 +58,7 @@ target/
 bin/
 include/
 local/
+
+# Local configuration
+development.ini
+production.ini
