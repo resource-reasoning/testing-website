@@ -9,7 +9,9 @@ from pyramid.httpexceptions import (
     )
 
 from sqlalchemy import func, text, cast, Text, or_, column, String
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.sql import expression
+from zope.sqlalchemy import mark_changed
 
 from . import DBSession
 from .models import (
@@ -17,11 +19,19 @@ from .models import (
     Batch,
     Run,
     TestCase,
+    TestClassifier,
     TestGroup,
     TestGroupMembership,
+    TestRunClassification,
     Stats
     )
+from .model_helpers import *
 
+import functools
+import operator
+
+import logging
+log = logging.getLogger(__name__)
 
 
 #### Home page and redirection ###
@@ -60,16 +70,55 @@ def view_jobs(request):
 
 @view_config(route_name='view_job', renderer='templates/job.pt')
 def view_batch(request):
-    runs_stats = DBSession.query(Stats).filter(Stats.job_id == request.matchdict['job_id']).first()
-    return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'))
+    job_id = request.matchdict['job_id']
+    job = DBSession.query(Job).filter(Job.id == job_id).one()
+
+    runs_stats = DBSession.query(Run.result, func.count(Run.result)) \
+                    .filter(Run.job_id == job_id) \
+                    .group_by(Run.result).all()
+    groups = DBSession.query(TestGroup).all()
+    classifiers = DBSession.query(TestClassifier).all()
+    return dict(runs_stats=runs_stats, root_url=request.route_url('view_home'),
+                groups=groups, classifiers=classifiers, job=job)
 
 @view_config(route_name='request_job_table', request_method='GET', renderer='json')
 def request_job_table(request):
     # Server side processing for DataTables plugin
 
-    query = DBSession.query(Run.id, Run.test_id, Run.result).filter(Run.job_id == request.matchdict['job_id'])
+    job = request.matchdict['job_id']
+    query = DBSession.query(Run.id, Run.test_id, Run.stdout, Run.stderr, Run.result).filter(Run.job_id == job)
 
-    table = DataTable(request.GET, Run, query, ["test_id", "result"])
+    resultFilter = request.params.getall('resultFilter[]')
+    if resultFilter:
+        query = query.filter(Run.result.in_(resultFilter))
+
+    groupFilter = request.params.getall('select-group[]')
+    if groupFilter:
+        group_subquery = DBSession.query(TestGroupMembership.test_id) \
+            .filter(TestGroupMembership.group_id.in_(groupFilter))
+        query = query.filter(Run.test_id.in_(group_subquery))
+
+    groupExcludeFilter = request.params.getall('exclude-group[]')
+    if groupExcludeFilter:
+        groupExc_subquery = DBSession.query(TestGroupMembership.test_id) \
+            .filter(TestGroupMembership.group_id.in_(groupExcludeFilter))
+        query = query.filter(~Run.test_id.in_(groupExc_subquery))
+
+    classifierFilter = request.params.getall('select-classifier[]')
+    if classifierFilter:
+        subquery = DBSession.query(Run.id).join(TestRunClassification) \
+            .filter(Run.job_id == job) \
+            .filter(TestRunClassification.classifier_id.in_(classifierFilter))
+        query = query.filter(Run.id.in_(subquery))
+
+    classifierFilter = request.params.getall('exclude-classifier[]')
+    if classifierFilter:
+        subquery = DBSession.query(Run.id).join(TestRunClassification) \
+            .filter(Run.job_id == job) \
+            .filter(TestRunClassification.classifier_id.in_(classifierFilter))
+        query = query.filter(~Run.id.in_(subquery))
+
+    table = DataTable(request.GET, Run, query, ["test_id", "stdout", "stderr", "result"])
     table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
     # Search for similarity in Results or Regex in test_id
     table.searchable(lambda queryset, userinput: queryset.filter(or_(cast(Run.result, Text).\
@@ -83,10 +132,17 @@ def request_job_table(request):
 
 @view_config(route_name='view_test_run', renderer='templates/testrun.pt')
 def view_test_run(request):
-    run = DBSession.query(Run).filter(Run.id == request.matchdict['test_id']).first()
+    run = DBSession.query(Run).options(joinedload(Run.batch), joinedload(Run.job)).\
+                filter(Run.id == request.matchdict['test_id']).first()
     groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
                 filter(TestGroupMembership.test_id == run.test_id).all()
-    return dict(run=run, groups=groups, redirect=request.route_url('view_test', test_id=run.test_id))
+
+    classifs = DBSession.query(TestClassifier.id, TestClassifier.description) \
+        .join(TestRunClassification, TestRunClassification.classifier_id == TestClassifier.id) \
+        .filter(TestRunClassification.run_id == run.id).all()
+
+    return dict(run=run, groups=groups, classifiers=classifs,
+                redirect=request.route_url('view_test', test_id=run.test_id))
 
 
 
@@ -94,13 +150,17 @@ def view_test_run(request):
 
 @view_config(route_name='view_test', renderer='templates/testcase.pt')
 def view_test(request):
-    runs = DBSession.query(Run).filter(
-        Run.test_id == request.matchdict['test_id']).order_by(Run.id.desc()).all()
+    test_id = request.matchdict['test_id']
+    testcase = DBSession.query(TestCase).filter(TestCase.id == test_id) \
+                    .options(joinedload(TestCase.runs)) \
+                    .one()
+
     runs_stats = DBSession.query(Run.result, func.count(Run.result)).filter(
-        Run.test_id == request.matchdict['test_id']).group_by(Run.result).all()
+        Run.test_id == test_id).group_by(Run.result).all()
+
     groups = DBSession.query(TestGroup).join(TestGroupMembership, TestGroupMembership.group_id == TestGroup.id).\
-                filter(TestGroupMembership.test_id == request.matchdict['test_id']).all()
-    return dict(runs=runs, runs_stats=runs_stats, groups=groups, root_url=request.route_url('view_home'))
+                filter(TestGroupMembership.test_id == test_id).all()
+    return dict(testcase=testcase, runs_stats=runs_stats, groups=groups, root_url=request.route_url('view_home'))
 
 
 
@@ -142,7 +202,7 @@ def compare_save(request):
 
     # Recreate user search:
     search = request.params['search']
-    if (search != ''): 
+    if (search != ''):
         res = res.filter(Run.test_id.op('~')(search))
     res = res.all()
 
@@ -196,7 +256,7 @@ def request_group_tests(request):
     in_cases  = DBSession.query(TestGroupMembership.test_id).\
                 filter(TestGroupMembership.group_id == request.matchdict['group_id'])
     not_cases = DBSession.query(TestCase).filter(~TestCase.id.in_(in_cases))
-    
+
     table = DataTable(request.GET, TestCase, not_cases, ["id"])
     table.add_data(link=lambda o: request.route_url("view_test", test_id=o.id))
     table.searchable(lambda queryset, userinput: queryset.filter(TestCase.id.op('~')(userinput)))
@@ -206,7 +266,7 @@ def request_group_tests(request):
 def group_add_test(request):
     tests = request.params.getall('tests')
     group_id = request.matchdict['group_id']
-    for x in tests:   
+    for x in tests:
         membership = TestGroupMembership(test_id=x, group_id=group_id)
         DBSession.add(membership)
     DBSession.flush()
@@ -217,7 +277,191 @@ def group_remove_test(request):
     tests = request.params.getall('tests')
     group_id = request.matchdict['group_id']
     allTests = DBSession.query(TestGroupMembership).filter(TestGroupMembership.group_id == group_id)
-    for x in tests:   
+    for x in tests:
         allTests.filter(TestGroupMembership.test_id == x).delete()
     DBSession.flush()
     return dict(success=True)
+
+### Classifiers ###
+@view_config(route_name='list_classifiers', renderer='templates/list_classifiers.pt')
+def list_classifiers(request):
+    classifiers = DBSession.query(TestClassifier).all()
+    return dict(classifiers=classifiers)
+
+@view_config(route_name='create_classifier', renderer='templates/create_classifier.pt')
+def create_classifier(request):
+    if 'form.submitted' in request.params:
+        desc = request.params['description']
+        col = request.params['field']
+        pat = request.params['pattern']
+        print(col)
+        print(pat)
+        classifier = TestClassifier(description=desc, column=col, pattern=pat)
+        DBSession.add(classifier)
+        DBSession.flush()
+        classifier_id = classifier.id
+        return HTTPFound(location=request.route_url('view_classifier', classifier_id=classifier_id))
+    return dict(columns=Run.__table__.columns.keys(), classifier=None)
+
+@view_config(route_name='view_classifier', renderer='templates/view_classifier.pt')
+def view_classifier(request):
+    classifier = DBSession.query(TestClassifier) \
+                          .filter_by(id=request.matchdict['classifier_id']) \
+                          .one()
+
+    return dict(columns=Run.__table__.c.keys(), classifier=classifier, view=True)
+
+@view_config(route_name='test_classifier', request_method='GET', renderer='json')
+def test_classifier(request):
+    classifier = DBSession.query(TestClassifier) \
+                          .filter_by(id=request.matchdict['classifier_id']) \
+                          .first()
+
+    col = getattr(Run, str(classifier.column))
+
+    matched_runs = DBSession.query(Run.id, Run.test_id, col) \
+                       .filter(col.op('~')(classifier.pattern))
+
+    if request.params['job_id']:
+        matched_runs = matched_runs.filter(Run.job_id == request.params['job_id'])
+
+    table = DataTable(request.GET, Run, matched_runs, ["id", "test_id", classifier.column])
+    table.add_data(link=lambda o: request.route_url("view_test_run", test_id=o.id))
+    table.searchable(lambda queryset, userinput: queryset.filter(Run.test_id.op('~')(userinput)))
+    return table.json()
+
+@view_config(route_name='apply_classifier', request_method='POST')
+def apply_classifier(request):
+    job = request.params['job']
+    cid = request.matchdict['classifier_id']
+
+    session = DBSession()
+
+    if request.params['submit'] == 'apply':
+
+        classifiers = session.query(TestClassifier)
+        if cid != "all":
+            classifiers = classifiers.filter_by(id=cid)
+        classifiers = classifiers.all()
+
+        for classifier in classifiers:
+            col = getattr(Run, str(classifier.column))
+
+            matched_runs = session.query(str(classifier.id), Run.id) \
+                            .filter(Run.job_id == job) \
+                            .filter(col.op('~')(classifier.pattern))
+
+            query = expression.insert(TestRunClassification).from_select(
+                [TestRunClassification.classifier_id, TestRunClassification.run_id],
+                matched_runs)
+
+            session.execute(query)
+
+    elif request.params['submit'] == 'delete':
+        subquery = session.query(TestRunClassification.run_id) \
+                       .join(Run).filter(Run.job_id == job)
+
+        query = session.query(TestRunClassification) \
+            .filter(TestRunClassification.run_id.in_(subquery))
+
+        if cid != "all":
+            query = query.filter(TestRunClassification.classifier_id == cid)
+
+        query.delete(synchronize_session=False)
+
+    mark_changed(session)
+
+    if cid == 'all':
+        return HTTPFound(location=request.route_url('list_classifiers'))
+    else:
+        return HTTPFound(location=request.route_url('view_classifier', classifier_id=cid))
+
+@view_config(route_name='rollup_test', renderer='templates/sum.pt')
+def rollup_test(request):
+    ignored_runs = DBSession.query(TestGroupMembership.test_id) \
+        .filter(TestGroupMembership.group_id.between(6,8)) #16))
+    test_runs = DBSession.query(Run.id, Run.test_id, Run.result) \
+        .filter(Run.job_id == 74) \
+        .filter(Run.test_id.notin_(ignored_runs)) \
+        .cte()
+
+    rollup_cols = [TestCase.part1, TestCase.part2]
+    q = DBSession.query(TestCase.test_id, *rollup_cols)
+    q = rollup(DBSession, q, *rollup_cols)
+    columns = [c['name'] for c in q.column_descriptions]
+    return dict(cols=columns, rows=q.all())
+
+@view_config(route_name='summarise_job_filter', renderer='templates/sum.pt')
+def summarise_job_filter(request):
+    ignored_runs = DBSession.query(TestGroupMembership.test_id) \
+        .filter(TestGroupMembership.group_id.between(6,8)) #16))
+    test_runs = DBSession.query(Run.id, Run.test_id, Run.result) \
+        .filter(Run.job_id == 74) \
+        .filter(Run.test_id.notin_(ignored_runs)) \
+        .cte()
+
+    rollup_cols = [TestCase.part1, TestCase.part2] # , TestCase.part3, TestCase.part4,
+                 #TestCase.part5, TestCase.part6]
+
+    # Pivot table for group membership
+    groups = DBSession.query(TestGroup.id, TestGroup.description) \
+        .filter(TestGroup.id.between(9,21)).all()
+
+    test_case_id = TestCase.id.label('test_case_id')
+    query = DBSession.query(test_case_id, *rollup_cols) \
+            .join(test_runs, test_runs.c.test_id == test_case_id) \
+            .outerjoin(TestGroupMembership)
+
+    pivot_exps = [TestGroupMembership.group_id == g.id for g in groups]
+    pivot_labels = tuple("G: "+g.description for g in groups)
+    query = pivot(query, pivot_exps, pivot_labels)
+
+    sum_g_column = functools.reduce(operator.add, pivot_exps).label("Sum G")
+    query = query.add_columns(sum_g_column)
+
+    # Stick it into a subquery -- if we just use multiple outer left joins,
+    # we get a cross product join between groups and classifications
+    # (since the grouping is applied late), work out ways to improve on this
+    subquery = query.subquery()
+
+    # Pivot table for test classifications
+    classifiers = DBSession.query(TestClassifier.id, TestClassifier.description).all()
+    query = DBSession.query(subquery) \
+        .join(test_runs, test_runs.c.test_id == subquery.c.test_case_id) \
+        .outerjoin(TestRunClassification, test_runs.c.id == TestRunClassification.run_id)
+
+    pivot_exps = [TestRunClassification.classifier_id == c.id for c in classifiers]
+    pivot_labels = tuple("C: " + c.description for c in classifiers)
+    query = pivot(query, pivot_exps, pivot_labels)
+
+    sum_c_column = functools.reduce(operator.add, pivot_exps).label("Sum C")
+    query = query.add_columns(sum_c_column)
+
+    subquery = query.subquery()
+
+    # Drop off TestCase.id for grouping
+    query = DBSession.query(subquery) \
+        .join(test_runs, test_runs.c.test_id == subquery.c.test_case_id)
+
+    sum_g_column = subquery.corresponding_column(sum_g_column)
+    sum_c_column = subquery.corresponding_column(sum_c_column)
+
+    pass_col = test_runs.c.result == 'PASS'
+    fail_col = ~pass_col
+    filtered_exp = (sum_g_column + sum_c_column) > 0
+    pass_filtered_col = pass_col & filtered_exp
+    fail_filtered_col = fail_col & ~filtered_exp
+
+    # Generic count columns
+    query = pivot(query,
+                  [pass_col, fail_col, filtered_exp, pass_filtered_col, fail_filtered_col],
+                  ["Pass", "Fail", "filtered", "Pass & Filtered", "Fail & ~Filtered"])
+
+    # Fetch out the new rollup column aliases for the rollup operation
+    rollup_cols = tuple(subquery.corresponding_column(c) for c in rollup_cols)
+    query = rollup(DBSession, query, rollup_cols, f=func.sum,
+                   mask_cols=(test_case_id,))
+
+    columns = (c['name'] for c in query.column_descriptions)
+
+    return dict(cols=columns, rows=query.all())

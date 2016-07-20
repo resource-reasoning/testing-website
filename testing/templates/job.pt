@@ -31,49 +31,16 @@
       </div>
     </div>
 
-    <!-- NavBar -->
-    <div class="container">
-      <nav class="navbar navbar-default">
-        <div class="container-fluid">
-          <!-- Brand and toggle get grouped for better mobile display -->
-          <div class="navbar-header">
-            <a class="navbar-brand" href="${request.route_url('view_home')}">Home</a>
-          </div>
-
-          <!-- Collect the nav links, forms, and other content for toggling -->
-          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-            <ul class="nav navbar-nav">
-              <li><a href="${request.route_url('view_groups')}">Groups</a></li>
-            </ul>
-          </div><!-- /.navbar-collapse -->
-        </div><!-- /.container-fluid -->
-      </nav>
-    </div>
+    <div metal:use-macro="load: menu.pt" />
 
     <div class="container">
       <div class="row">
         <div class="col-sm-7">
           <table class="table table-bordered">
             <tbody>
-              <tr>
-                <td>Passes</td>
-                <td>${runs_stats.passes}</td>
-              </tr>
-              <tr>
-                <td>Fails</td>
-                <td>${runs_stats.fails}</td>
-              </tr>
-              <tr>
-                <td>Aborts</td>
-                <td>${runs_stats.aborts}</td>
-              </tr>
-              <tr>
-                <td>Timeouts</td>
-                <td>${runs_stats.timeouts}</td>
-              </tr>
-              <tr>
-                <td>Unknowns</td>
-                <td>${runs_stats.unknowns}</td>
+              <tr tal:repeat="stat runs_stats">
+                <td>${stat[0]}</td>
+                <td>${stat[1]}</td>
               </tr>
             </tbody>
           </table>
@@ -82,27 +49,67 @@
           <canvas id="stats-pie" width="200" height="200"></canvas>
         </div>
       </div>
-      <div class="row">
+      <div class="row form-group">
         <div class="col-sm-3">
-          <div class="form-group">
-            <input id="job-no" type="text" class="form-control" placeholder="Compare against another job">
-          </div>
+          <input id="job-no" type="text" class="form-control" placeholder="Compare against another job">
         </div>
-        <div class="col-sm-9">
+        <div class="col-sm-3">
           <button id="submit-no" class="btn btn-default">Submit</button>
         </div>
+        <div class="form-group">
+          <form action="${request.route_url('apply_classifier', classifier_id='all')}" method="POST">
+            <input name="job" type="hidden" value="${job.id}" />
+            <div class="col-sm-5">
+              <button class="btn btn-warning" name="submit" value="apply">Apply All Classifiers</button>
+              <button class="btn btn-danger" name="submit" value="delete">Unapply All Classifiers</button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
 
-    <div class="container">
+      <div class="row form-group" id="table-controls">
+        <div class="col-sm-2 checkbox">
+          <div><label><input type="checkbox" id="chk-pass" value="PASS" />PASS</label></div>
+          <div><label><input type="checkbox" id="chk-fail" value="FAIL" />FAIL</label></div>
+          <div><label><input type="checkbox" id="chk-abort" value="ABORT" />ABORT</label></div>
+          <div><label><input type="checkbox" id="chk-timeout" value="TIMEOUT" />TIMEOUT</label></div>
+          <div><label><input type="checkbox" id="chk-unknown" value="UNKNOWN" />UNKNOWN</label></div>
+        </div>
+        <div class="col-sm-3">
+          <label for="select-group">Include groups:</label>
+          <select class="form-control" id="select-group" multiple="multiple">
+            <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
+          </select>
+        </div>
+        <div class="col-sm-3">
+          <label for="exclude-group">Exclude groups:</label>
+          <select class="form-control" id="exclude-group" multiple="multiple">
+            <option tal:repeat="group groups" value="${group.id}">${group.description}</option>
+          </select>
+        </div>
+        <div class="col-sm-2">
+          <label for="select-classifier">Include classifiers:</label>
+          <select class="form-control" id="select-classifier" multiple="multiple">
+            <option tal:repeat="classifier classifiers" value="${classifier.id}">${classifier.description}</option>
+          </select>
+        </div>
+        <div class="col-sm-2">
+          <label for="exclude-classifier">Exclude classifiers:</label>
+          <select class="form-control" id="exclude-classifier" multiple="multiple">
+            <option tal:repeat="classifier classifiers" value="${classifier.id}">${classifier.description}</option>
+          </select>
+        </div>
+      </div>
+
       <table id="job-table" class="table table-hover table-bordered">
         <thead>
           <tr>
             <th>Test Case (Click to view run)</th>
+            <th>stdout</th>
+            <th>stderr</th>
             <th>Result</th>
           </tr>
         </thead>
-        
       </table>
     </div>
 
@@ -117,19 +124,49 @@
     <!-- Chart.js files via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
 
-
     <script>
+    var resultFilter = [];
+    var selectFilters = {};
+
+    var table;
+
+    function isDefined(val) {
+          return !(val === undefined);
+      }
+
+    function applyFilters() {
+      resultFilter = ['#chk-pass', '#chk-fail', '#chk-abort', '#chk-timeout', '#chk-unknown'].map(
+        function(el) {
+          var el = $(el)[0];
+          return el.checked ? el.value : undefined;
+        }).filter(isDefined);
+
+      ['select-group', 'exclude-group', 'select-classifier', 'exclude-classifier'].forEach(
+        function(id) {
+          selectFilters[id] = Array.prototype.map.call(
+            $('#'+id)[0],
+            function(opt) {
+              return opt.selected ? opt.value : undefined;
+            }
+          ).filter(isDefined);
+        }
+      );
+
+      table.draw();
+    }
+
     jQuery(document).ready(function($) {
 
-      var geturl = "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}";
-
-      var table = $("#job-table").DataTable( {
-        "ordering": false,
+      table = $("#job-table").DataTable( {
         "processing": true,
         "serverSide": true,
         "ajax" : {
-          "url" : geturl,
-          "type" : "GET"
+          "url" : "${request.route_path('request_job_table', job_id=request.matchdict['job_id'])}",
+          "type" : "GET",
+          "data" : function(d) {
+            Object.assign(d, selectFilters);
+            d.resultFilter = resultFilter;
+          }
         },
         "columns" : [
           { 
@@ -138,6 +175,8 @@
               return "<a href='" + row.DT_RowData.link + "'>" + data + "</a>";
             }
           },
+          { "data" : "stdout" },
+          { "data" : "stderr" },
           { "data" : "result" }
         ]
       });
@@ -146,43 +185,8 @@
         window.document.location =  "${request.route_url('view_home')}" + 'compare/' + "${request.matchdict['job_id']}/" + $("#job-no").val();
       });
 
-      var ctx = $("#stats-pie").get(0).getContext("2d");
-      
-      var data = [
-        {
-            value: ${runs_stats.passes},
-            color:"#00B800",
-            highlight: "#00CC00",
-            label: "Passes"
-        },
-        {
-            value: ${runs_stats.fails},
-            color: "#CF0000",
-            highlight: "#E60000",
-            label: "Fails"
-        },
-        {
-            value: ${runs_stats.aborts},
-            color: "#E6B800",
-            highlight: "#FFCC00",
-            label: "Aborts"
-        },
-        {
-            value: ${runs_stats.timeouts},
-            color: "#E6B8E6",
-            highlight: "#FFCCFF",
-            label: "Timeouts"
-        },
-        {
-            value: ${runs_stats.unknowns},
-            color: "#808080",
-            highlight: "#A6A6A6",
-            label: "Unknown"
-        }
-      ]
-
-      var myPieChart = new Chart(ctx).Pie(data,{});
-
+      $('#table-controls').change(applyFilters);
+      applyFilters();
     });
     </script>
 

@@ -26,30 +26,32 @@
   <body>
     <div style="background:#58BCFF !important" class="jumbotron">
       <div class="container">
-        <h1>/groups</h1>
-        <p>Recap of existing groups</p>
+        <h1>/classifiers</h1>
+        <p>List test classifiers</p>
       </div>
     </div>
 
     <div metal:use-macro="load: menu.pt">
-      <li metal:fill-slot="submenu"><a href="${request.route_path('create_group')}">Create Group</a></li>
+      <li metal:fill-slot="submenu"><a href="${request.route_path('create_classifier')}">Create Classifier</a></li>
     </div>
 
     <div class="container">
-      <div class="row"> 
-        <table id="cases-table" class="table table-bordered">
+      <div class="row">
+        <table id="job-table" class="table table-hover table-bordered">
           <thead>
             <tr>
-              <th>Group id</th>
-              <th>Group Description</th>
+              <th>ID</th>
+              <th>Description</th>
+              <th>Field</th>
+              <th>Pattern</th>
+            </tr>
+            <tr tal:repeat="c classifiers">
+              <td><a href="${request.route_path('view_classifier', classifier_id=c.id)}">${c.id}</a></td>
+              <td>${c.description}</td>
+              <td>${c.column}</td>
+              <td>${c.pattern}</td>
             </tr>
           </thead>
-          <tbody>
-            <tr tal:repeat="case groups">
-              <td><a href="${request.route_url('view_group', group_id=case.id)}">${case.id}</a></td>
-              <td>${case.description}</td>
-            </tr>
-          </tbody>
         </table>
       </div>
     </div>
@@ -61,12 +63,6 @@
     <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
     <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-
-    <script>
-      jQuery(document).ready(function($) {
-        $("#cases-table").DataTable();
-      });
-    </script>
 
   </body>
 

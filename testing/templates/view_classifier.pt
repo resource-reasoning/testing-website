@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="${request.locale_name}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Test262 test run viewer.">
+
+    <title>Test262 Job Viewer</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+     <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.7/css/jquery.dataTables.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+  </head>
+  
+  <body>
+    <div style="background:#58BCFF !important" class="jumbotron">
+      <div class="container">
+        <h1>/classifier/view/${classifier.id}</h1>
+        <p>Test a classifier below:</p>
+      </div>
+    </div>
+
+    <div metal:use-macro="load: menu.pt">
+      <li metal:fill-slot="submenu"><a href="${request.route_path('create_classifier')}">Create Classifier</a></li>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <form action="${request.route_url('create_group')}" method="post">
+          <div class="form-group">
+            <label for="group_desc">Description</label>
+            <!-- <input type="text" class="form-control" id="Group Description" placeholder="Description"> -->
+            <textarea class="form-control" rows="2" name="group_desc"></textarea>
+            <label for="pattern">Pattern</label>
+            <textarea class="form-control" rows="2" name="pattern"></textarea>
+            <label for="field">Field</label>
+            <select name="field" class="form-control">
+              <option tal:repeat="column columns" value="${column}">${column}</option>
+            </select>
+            <button type="submit" name="form.submitted" class="btn btn-default">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="row">
+        <div class="form-group">
+          <form action="${request.route_url('apply_classifier', classifier_id=classifier.id)}" method="POST">
+            <div class="col-sm-3">
+              <input id="job" name="job" type="text" class="form-control" placeholder="Test for job" />
+            </div>
+            <div class="col-sm-5">
+              <button type="button" id="job-but" class="btn btn-default">Test Classifier</button>
+              <button class="btn btn-warning" name="submit" value="apply">Apply Classifier</button>
+              <button class="btn btn-danger" name="submit" value="delete">Delete Classifier</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="row">
+        <table id="job-table" class="table table-hover table-bordered">
+          <thead>
+            <tr>
+              <th>Test Run</th>
+              <th>Test Case</th>
+              <th>${classifier.column}</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="//cdn.datatables.net/1.10.7/js/jquery.dataTables.min.js"></script>
+    <script src="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <script>
+    var job_id = 0;
+    var table;
+    $('#job-but').click(function() {
+      job_id = $('#job')[0].value;
+      table.draw();
+    });
+
+    var table = $("#job-table").DataTable( {
+      "ordering": false,
+      "processing": true,
+      "serverSide": true,
+      "ajax" : {
+        "url" : "${request.route_path('test_classifier', classifier_id=request.matchdict['classifier_id'])}",
+        "type" : "GET",
+        "data" : function (d) {
+          d.job_id = job_id;
+        }
+      },
+      "columns" : [
+        { 
+          "data" : "id",
+          "render" : function (data, type, row) {
+            return "<a href='" + row.DT_RowData.link + "'>" + data + "</a>";
+          }
+        },
+        { "data" : "test_id" },
+        { "data" : "${classifier.column}" }
+      ]
+    });
+    </script>
+
+  </body>
+
+</html>
