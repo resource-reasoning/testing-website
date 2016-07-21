@@ -25,7 +25,7 @@ deploy:
   - virtualenv env
   - source env/bin/activate
   - python setup.py install
-  - chmod -R og+rw .
+  - chmod -R ug+rw .
   - touch $DEPLOY_DIR/redeploy.trigger
   tags:
   - jscert-testing-website-production
