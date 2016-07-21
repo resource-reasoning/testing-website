@@ -18,6 +18,7 @@ test:
 deploy:
   stage: deploy
   script:
+  - umask 002
   - sed -e 's|%(database_uri)|$DATABASE_URI|' production.ini.tmpl > production.ini
   - cp -r . $DEPLOY_DIR
   - cd $DEPLOY_DIR
