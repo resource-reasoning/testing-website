@@ -1,4 +1,9 @@
 ---
+stages:
+- test
+- deploy
+- "Git Sync"
+
 test:
   stage: test
   before_script:
@@ -29,6 +34,7 @@ deploy:
   - triggers
 
 git-sync:
+  stage: "Git Sync"
   script:
   - eval `ssh-agent`
   - echo "$PUSH_KEY" | ssh-add -
