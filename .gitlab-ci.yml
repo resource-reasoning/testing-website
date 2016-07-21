@@ -1,4 +1,33 @@
 ---
+test:
+  stage: test
+  before_script:
+  - virtualenv env
+  - source env/bin/activate
+  script:
+  - python setup.py install
+  - python -m unittest discover testing
+  except:
+  - triggers
+
+deploy:
+  stage: deploy
+  script:
+  - sed -e 's|%(database_uri)|$DATABASE_URI|' production.ini.tmpl > production.ini
+  - cp -r . $DEPLOY_DIR
+  - cd $DEPLOY_DIR
+  - source bin/activate
+  - python setup.py install
+  - chmod -R og+rw .
+  - touch $DEPLOY_DIR/redeploy.trigger
+  tags:
+  - jscert-testing-website-production
+  environment: production
+  only:
+  - production
+  except:
+  - triggers
+
 git-sync:
   script:
   - eval `ssh-agent`
