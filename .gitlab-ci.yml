@@ -21,7 +21,8 @@ deploy:
   - sed -e 's|%(database_uri)|$DATABASE_URI|' production.ini.tmpl > production.ini
   - cp -r . $DEPLOY_DIR
   - cd $DEPLOY_DIR
-  - source bin/activate
+  - virtualenv env
+  - source env/bin/activate
   - python setup.py install
   - chmod -R og+rw .
   - touch $DEPLOY_DIR/redeploy.trigger
