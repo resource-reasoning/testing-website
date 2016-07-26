@@ -26,6 +26,7 @@ deploy:
   - source env/bin/activate
   - python setup.py install
   - chmod -R ug+rw .
+  - alembic -c production.ini upgrade head
   - touch $DEPLOY_DIR/redeploy.trigger
   tags:
   - jscert-testing-website-production
