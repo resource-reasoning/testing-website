@@ -12,7 +12,7 @@ from testing.models import Base
 
 setup_logging(config.config_file_name)
 
-sqlalchemy_config = config.get_section('app:main')
+sqlalchemy_config = config.get_section('app:testing')
 
 target_metadata = Base.metadata
 
