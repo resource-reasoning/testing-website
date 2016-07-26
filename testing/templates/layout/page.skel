@@ -1,0 +1,13 @@
+<metal:main use-macro="load: layout/page.pt">
+  <metal metal:fill-slot="header">
+  </metal>
+
+  <metal metal:fill-slot="submenu">
+  </metal>
+
+  <metal metal:fill-slot="content">
+  </metal>
+
+  <script metal:fill-slot="extra-script">
+  </script>
+</metal:main>

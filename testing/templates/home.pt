@@ -1,195 +1,155 @@
-<!DOCTYPE html>
-<html lang="${request.locale_name}">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Test262 test run viewer.">
+<metal:main use-macro="load: layout/page.pt">
+  <metal:metal metal:fill-slot="header">
+    <h1>test262 results viewer</h1>
+    <p>Click on a job to view run info</p>
+  </metal:metal>
 
-    <title>Test262 Job Viewer</title>
-
-    <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    
-
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-    <![endif]-->
-
-  </head>
-  
-  <body>
-
-    <div style="background:#58BCFF !important" class="jumbotron">
-      <div class="container">
-        <h1>test262 results viewer</h1>
-        <p>Click on a job to view run info</p>
+  <metal:metal metal:fill-slot="content">
+    <div class="row">
+      <div class="col-sm-12">
+        <canvas id="job-chart" width="1100" height="300"></canvas>
       </div>
     </div>
-
-
-    <div metal:use-macro="load: menu.pt" />
-
-    <div class="container">
-      <div class="row">
-        <div class="col-sm-12">        
-          <canvas id="job-chart" width="1100" height="300"></canvas>
-        </div>
+    <div class="row">
+      <div class="col-sm-12 data-toggles">
+        <button class="passes btn btn-default">Passes</button>
+        <button class="fails btn btn-default">Fails</button>
+        <button class="aborts btn">Aborts</button>
+        <button class="timeouts btn">Timeouts</button>
       </div>
-      <div class="row">
-        <div class="col-sm-12 data-toggles">
-          <button class="passes btn btn-default">Passes</button>
-          <button class="fails btn btn-default">Fails</button>
-          <button class="aborts btn">Aborts</button>
-          <button class="timeouts btn">Timeouts</button>
-        </div>
-      </div>
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th>Job Id</th>
-            <th>Title</th>
-            <th>Create Time</th>
-            <th>Username</th>
-            <th>Commit</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="jb jobs" class="table-row" data-url="job/${jb.id}">
-            <td >${jb.id}</td>
-            <td tal:content="jb.title">No Title</td>
-            <td tal:content="jb.create_time">No Time</td>
-            <td tal:content="jb.username">No Username</td>
-            <td><a tal:content="jb.repo_version[:5]" 
-              href="http://github.com/resource-reasoning/jscert_dev/commit/${jb.repo_version}"/></td>
-          </tr>
-        </tbody>
-      </table>
     </div>
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>Job Id</th>
+          <th>Title</th>
+          <th>Create Time</th>
+          <th>Username</th>
+          <th>Commit</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="jb jobs" class="table-row" data-url="job/${jb.id}">
+          <td >${jb.id}</td>
+          <td tal:content="jb.title">No Title</td>
+          <td tal:content="jb.create_time">No Time</td>
+          <td tal:content="jb.username">No Username</td>
+          <td><a tal:content="jb.repo_version[:5]"
+            href="http://github.com/resource-reasoning/jscert_dev/commit/${jb.repo_version}"/></td>
+        </tr>
+      </tbody>
+    </table>
+  </metal:metal>
 
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>    
+  <script metal:fill-slot="extra-script">
+  jQuery(document).ready(function($) {
 
-    <!-- Chart.js files via CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/1.0.2/Chart.min.js"></script>
+    $(".table-row").click(function() {
+        window.document.location = $(this).data("url");
+    });
 
-    <script>
-    jQuery(document).ready(function($) {
+    // Charting with toggles.
 
-      $(".table-row").click(function() {
-          window.document.location = $(this).data("url");
-      });
-
-      // Charting with toggles.
-      
-      $(".data-toggles button").click(function () {
-        currentChart.destroy();
-        $(this).toggleClass('btn-default');
-        checkSelected();
-        data = {
-            labels: ${labels},
-            datasets: [ passesData, failsData, abortsData, timeoutsData ]
-        };     
-        newChart = new Chart(ctx).Line(data, options);
-        currentChart = newChart;
-      });
-
-      var checkSelected = function () {
-        if ($(".passes").hasClass("btn-default")) {
-          passesData = {
-            label: "Passed",
-            strokeColor: "#00CC00",
-            pointColor: "#00B800",
-            pointStrokeColor: "#00B800",
-            pointHighlightFill: "#fff",
-            data: ${series['passes']}             
-          }
-        } else {
-          passesData = {}
-        }
-        if ($(".fails").hasClass("btn-default")) {
-          failsData = {
-            label: "Failed",
-            strokeColor: "#E60000",
-            pointColor: "#CF0000",
-            pointStrokeColor: "#CF0000",
-            pointHighlightFill: "#fff",
-            data: ${series['fails']}          
-          }
-        } else {
-          failsData = {}
-        }
-        if ($(".aborts").hasClass("btn-default")) {
-          abortsData = {
-            label: "Aborted",
-            strokeColor: "#FFCC00",
-            pointColor: "#E6B800",
-            pointStrokeColor: "#E6B800",
-            pointHighlightFill: "#fff",
-            data: ${series['aborts']}       
-          }
-        } else {
-          abortsData = {}
-        };
-        if ($(".timeouts").hasClass("btn-default")) {
-          timeoutsData = {
-            label: "Timeout",
-            strokeColor: "#FFCCFF",
-            pointColor: "#E6B8E6",
-            pointStrokeColor: "#E6B8E6",
-            pointHighlightFill: "#fff",
-            data: ${series['timeouts']}     
-          }
-        } else {
-          timeoutsData = {}
-        };
-      };
-
-      var data = {
-        // A labels array that can contain any sort of values
-        labels: ${labels},
-        // Our series array that contains series objects or in this case series data arrays
-        datasets: [
-          {
-            label: "Timeout",
-            strokeColor: "#FFCCFF",
-            pointColor: "#E6B8E6",
-            pointStrokeColor: "#E6B8E6",
-            pointHighlightFill: "#fff",
-            data: ${series['timeouts']} 
-          }
-        ]
-      };
-
-      var options = {
-        animation : false,
-        scaleOverride : true,
-        scaleSteps : 5,
-        scaleStepWidth : 2500,
-        scaleStartValue : 0,
-        datasetFill : false,
-        pointHitDetectionRadius : 5,
-      };
-
-      var ctx = $("#job-chart").get(0).getContext("2d");
-
+    $(".data-toggles button").click(function () {
+      currentChart.destroy();
+      $(this).toggleClass('btn-default');
       checkSelected();
       data = {
-        labels: ${labels},
-        datasets: [ passesData, failsData, abortsData, timeoutsData ]
+          labels: ${labels},
+          datasets: [ passesData, failsData, abortsData, timeoutsData ]
       };
-      baseChart = new Chart(ctx).Line(data, options);
-      currentChart = baseChart;
-
-
+      newChart = new Chart(ctx).Line(data, options);
+      currentChart = newChart;
     });
-    </script>
 
-  </body>
+    var checkSelected = function () {
+      if ($(".passes").hasClass("btn-default")) {
+        passesData = {
+          label: "Passed",
+          strokeColor: "#00CC00",
+          pointColor: "#00B800",
+          pointStrokeColor: "#00B800",
+          pointHighlightFill: "#fff",
+          data: ${series['passes']}
+        }
+      } else {
+        passesData = {}
+      }
+      if ($(".fails").hasClass("btn-default")) {
+        failsData = {
+          label: "Failed",
+          strokeColor: "#E60000",
+          pointColor: "#CF0000",
+          pointStrokeColor: "#CF0000",
+          pointHighlightFill: "#fff",
+          data: ${series['fails']}
+        }
+      } else {
+        failsData = {}
+      }
+      if ($(".aborts").hasClass("btn-default")) {
+        abortsData = {
+          label: "Aborted",
+          strokeColor: "#FFCC00",
+          pointColor: "#E6B800",
+          pointStrokeColor: "#E6B800",
+          pointHighlightFill: "#fff",
+          data: ${series['aborts']}
+        }
+      } else {
+        abortsData = {}
+      };
+      if ($(".timeouts").hasClass("btn-default")) {
+        timeoutsData = {
+          label: "Timeout",
+          strokeColor: "#FFCCFF",
+          pointColor: "#E6B8E6",
+          pointStrokeColor: "#E6B8E6",
+          pointHighlightFill: "#fff",
+          data: ${series['timeouts']}
+        }
+      } else {
+        timeoutsData = {}
+      };
+    };
 
-</html>
+    var data = {
+      // A labels array that can contain any sort of values
+      labels: ${labels},
+      // Our series array that contains series objects or in this case series data arrays
+      datasets: [
+        {
+          label: "Timeout",
+          strokeColor: "#FFCCFF",
+          pointColor: "#E6B8E6",
+          pointStrokeColor: "#E6B8E6",
+          pointHighlightFill: "#fff",
+          data: ${series['timeouts']}
+        }
+      ]
+    };
+
+    var options = {
+      animation : false,
+      scaleOverride : true,
+      scaleSteps : 5,
+      scaleStepWidth : 2500,
+      scaleStartValue : 0,
+      datasetFill : false,
+      pointHitDetectionRadius : 5,
+    };
+
+    var ctx = $("#job-chart").get(0).getContext("2d");
+
+    checkSelected();
+    data = {
+      labels: ${labels},
+      datasets: [ passesData, failsData, abortsData, timeoutsData ]
+    };
+    baseChart = new Chart(ctx).Line(data, options);
+    currentChart = baseChart;
+
+
+  });
+  </script>
+</metal:main>

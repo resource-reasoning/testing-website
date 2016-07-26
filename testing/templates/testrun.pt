@@ -1,113 +1,78 @@
-<!DOCTYPE html>
-<html lang="${request.locale_name}">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Test262 test run viewer.">
+<metal:main use-macro="load: layout/page.pt">
+  <metal metal:fill-slot="header">
+    <h1>/test/${run.id}</h1>
+    <p>recap of run of <i><a href="${h.test262_link(run.test_id, run.job.tests_version)}">${run.test_id}</a></i> in job ${run.batch.job_id}</p>
+  </metal>
 
-    <title>Test262 Job Viewer</title>
-
-    <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-      <script src="//oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-      <script src="//oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-    <![endif]-->
-  </head>
-  
-  <body>
-
-    <div style="background:#58BCFF !important" class="jumbotron">
-      <div class="container">
-        <h1>/test/${run.id}</h1>
-        <p>recap of run of <i><a href="${h.test262_link(run.test_id, run.job.tests_version)}">${run.test_id}</a></i> in job ${run.batch.job_id}</p>
+  <metal metal:fill-slot="content">
+    <div class="row">
+      <div class="col-sm-6">
+        <label for="run-info">Run information:</label>
+        <table id="run-info" class="table table-bordered">
+          <tbody>
+            <tr><td>Job</td><td>${run.job_id}</td></tr>
+            <tr><td>Result</td><td>${run.result}</td></tr>
+            <tr><td>Exit Code</td><td>${run.exit_code}</td></tr>
+            <tr><td>Duration</td><td>${run.duration}</td></tr>
+            <tr><td>Condor</td><td>${run.batch.condor_proc} ${run.batch.osnodename} (${run.batch.hardware})</td></tr>
+            <tr>
+              <td>Test Case</td>
+              <td tal:define="os import: os">
+                ${os.path.basename(run.test_id)}
+                (<a href="${h.test262_link(run.test_id)}">Source</a>)
+                (<a href="${request.route_path('view_test', test_id=run.test_id)}">Other Runs</a>)
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-    </div>
-
-    <div metal:use-macro="load: menu.pt">
-    </div>
-
-    <div class="container">
-      <div class="row">
-        <div class="col-sm-6">
-          <label for="run-info">Run information:</label>
-          <table id="run-info" class="table table-bordered">
-            <tbody>
-              <tr><td>Job</td><td>${run.job_id}</td></tr>
-              <tr><td>Result</td><td>${run.result}</td></tr>
-              <tr><td>Exit Code</td><td>${run.exit_code}</td></tr>
-              <tr><td>Duration</td><td>${run.duration}</td></tr>
-              <tr><td>Condor</td><td>${run.batch.condor_proc} ${run.batch.osnodename} (${run.batch.hardware})</td></tr>
+      <div class="col-sm-6">
+        <div tal:condition="len(groups)">
+          <label for="group-info">Groups</label>
+          <table id="group-info" class="table table-bordered">
+            <thead>
               <tr>
-                <td>Test Case</td>
-                <td tal:define="os import: os">
-                  ${os.path.basename(run.test_id)}
-                  (<a href="${h.test262_link(run.test_id)}">Source</a>)
-                  (<a href="${request.route_path('view_test', test_id=run.test_id)}">Other Runs</a>)
-                </td>
+                <th>Id</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="group groups">
+                <td><a href="${request.route_path('view_group', group_id=group.id)}">${group.id}</a></td>
+                <td>${group.description}</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <div class="col-sm-6">
-          <div tal:condition="len(groups)">
-            <label for="group-info">Groups</label>
-            <table id="group-info" class="table table-bordered">
-              <thead>
-                <tr>
-                  <th>Id</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="group groups">
-                  <td><a href="${request.route_path('view_group', group_id=group.id)}">${group.id}</a></td>
-                  <td>${group.description}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
 
-          <div tal:condition="len(classifiers)">
-            <label for="classifier-info">Classifiers</label>
-            <table id="classifier-info" class="table table-bordered">
-              <thead>
-                <tr>
-                  <th>Id</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr tal:repeat="classifier classifiers">
-                  <td><a href="${request.route_path('view_classifier', classifier_id=classifier.id)}">${classifier.id}</a></td>
-                  <td>${classifier.description}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div tal:condition="len(classifiers)">
+          <label for="classifier-info">Classifiers</label>
+          <table id="classifier-info" class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="classifier classifiers">
+                <td><a href="${request.route_path('view_classifier', classifier_id=classifier.id)}">${classifier.id}</a></td>
+                <td>${classifier.description}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
-      <div class="row">
-        <div class="col-sm-6">
-          <label for="stdout">Stdout dump:</label>
-          <pre id="stdout">${run.stdout}</pre>
-        </div>
-        <div class="col-sm-6">
-          <label for="stderr">Stderr dump:</label>
-          <pre id="stderr">${run.stderr}</pre>
-        </div>
     </div>
-</div>
-
-    <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-    <script src="//oss.maxcdn.com/libs/jquery/1.10.2/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-
-  </body>
-
-</html>
+    <div class="row">
+      <div class="col-sm-6">
+        <label for="stdout">Stdout dump:</label>
+        <pre id="stdout">${run.stdout}</pre>
+      </div>
+      <div class="col-sm-6">
+        <label for="stderr">Stderr dump:</label>
+        <pre id="stderr">${run.stderr}</pre>
+      </div>
+    </div>
+  </metal>
+</metal:main>
