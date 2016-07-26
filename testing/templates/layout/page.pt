@@ -23,7 +23,7 @@
   </head>
 
   <body>
-    <div style="background:#58BCFF !important" class="jumbotron">
+    <div style="background:#FBDE34 !important" class="jumbotron">
       <div class="container">
         <metal:metal metal:define-slot="header">
           <h1>Test262 Job Viewer</h1>
