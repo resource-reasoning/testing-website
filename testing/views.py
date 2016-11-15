@@ -378,15 +378,20 @@ def apply_classifier(request):
 
 @view_config(route_name='rollup_test', renderer='templates/sum.pt')
 def rollup_test(request):
-    ignored_runs = DBSession.query(TestGroupMembership.test_id) \
-        .filter(TestGroupMembership.group_id.between(6,8)) #16))
-    test_runs = DBSession.query(Run.id, Run.test_id, Run.result) \
-        .filter(Run.job_id == 74) \
-        .filter(Run.test_id.notin_(ignored_runs)) \
-        .cte()
+    id = request.params['job']
 
-    rollup_cols = [TestCase.part1, TestCase.part2]
-    q = DBSession.query(TestCase.test_id, *rollup_cols)
+    one = func.split_part(Run.test_id, '/', 4).alias('one')
+    two = func.split_part(Run.test_id, '/', 5).alias('two')
+
+    passed = (Run.result == 'PASS').alias('PASS')
+    failed = (Run.result == 'FAIL').alias('FAIL')
+    abort = (Run.result == 'ABORT').alias('ABORT')
+    timeout = (Run.result == 'TIMEOUT').alias('TIMEOUT')
+
+    rollup_cols = [one, two]
+    q = DBSession.query(passed, failed, abort, timeout, *rollup_cols) \
+                 .where(Run.job_id == id)
+
     q = rollup(DBSession, q, *rollup_cols)
     columns = [c['name'] for c in q.column_descriptions]
     return dict(cols=columns, rows=q.all())

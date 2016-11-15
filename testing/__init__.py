@@ -50,7 +50,7 @@ def main(global_config, **settings):
     config.add_route('test_classifier', '/classifier/{classifier_id}/test')
     config.add_route('apply_classifier', '/classifier/{classifier_id}/apply')
 
-    config.add_route('rollup_test', '/rollup')
+    config.add_route('rollup_test', '/rollup/{job}')
     config.add_route('summarise_job_filter', '/sum')
     config.scan()
     return config.make_wsgi_app()
